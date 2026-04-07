@@ -1,0 +1,81 @@
+# --- lambda.tf ---
+
+# This file defines the Lambda function responsible for creating database schemas.
+
+# IAM Role for the Lambda function
+resource "aws_iam_role" "create_schema_lambda" {
+  name = "n8n-create-schema-lambda-role"
+  assume_role_policy = jsonencode({
+    Version   = "2012-10-17"
+    Statement = [{
+      Action    = "sts:AssumeRole"
+      Effect    = "Allow"
+      Principal = {
+        Service = "lambda.amazonaws.com"
+      }
+    }]
+  })
+}
+
+# Grant the Lambda basic execution and VPC access permissions
+resource "aws_iam_role_policy_attachment" "lambda_vpc_access" {
+  role       = aws_iam_role.create_schema_lambda.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+}
+
+# Grant the Lambda permission to read our specific database secret
+resource "aws_iam_policy" "lambda_read_db_secret" {
+  name   = "n8n-lambda-read-db-secret-policy"
+  policy = jsonencode({
+    Version   = "2012-10-17"
+    Statement = [{
+      Action   = "secretsmanager:GetSecretValue"
+      Effect   = "Allow"
+      Resource = aws_secretsmanager_secret.db_credentials.arn
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_read_db_secret" {
+  role       = aws_iam_role.create_schema_lambda.name
+  policy_arn = aws_iam_policy.lambda_read_db_secret.arn
+}
+
+# Security group for the Lambda function
+resource "aws_security_group" "create_schema_lambda" {
+  name   = "n8n-create-schema-lambda-sg"
+  vpc_id = module.vpc.vpc_id
+
+  # The Lambda only makes outbound connections to the RDS instance,
+  # so no ingress rules are needed.
+  egress {
+    protocol    = "-1"
+    from_port   = 0
+    to_port     = 0
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+# The Lambda function resource, now configured for a container image
+resource "aws_lambda_function" "create_schema" {
+  function_name = "n8n-tenant-create-schema"
+  role          = aws_iam_role.create_schema_lambda.arn
+  package_type  = "Image"
+  image_uri     = "${aws_ecr_repository.create_schema_lambda.repository_url}:latest"
+
+  timeout = 30 # seconds
+
+  environment {
+    variables = {
+      DB_HOST                   = aws_db_instance.main.address
+      DB_PORT                   = aws_db_instance.main.port
+      DB_CREDENTIALS_SECRET_ARN = aws_secretsmanager_secret.db_credentials.arn
+    }
+  }
+
+  # Configure the Lambda to run inside our VPC
+  vpc_config {
+    subnet_ids         = module.vpc.private_subnets
+    security_group_ids = [aws_security_group.create_schema_lambda.id]
+  }
+}

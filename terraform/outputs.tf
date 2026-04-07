@@ -19,3 +19,8 @@ output "alb_dns_name" {
   description = "The DNS name of the Application Load Balancer."
   value       = aws_lb.main.dns_name
 }
+
+output "ecr_repository_url" {
+  description = "The URL of the ECR repository for the create-schema Lambda."
+  value       = aws_ecr_repository.create_schema_lambda.repository_url
+}
