@@ -1,0 +1,33 @@
+# Terraform provider binaries and plugins (huge, never commit these)
+**/.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfplan
+
+# Crash log files
+crash.log
+crash.*.log
+
+# Sensitive variable files
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+
+# Override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Lock file IS committed (it pins provider versions)
+# .terraform.lock.hcl  <-- do NOT ignore this one
+
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+
+# Lambda build artifacts
+lambda/create-schema.zip
