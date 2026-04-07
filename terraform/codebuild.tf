@@ -194,8 +194,10 @@ resource "aws_codebuild_project" "provision_tenant" {
   }
 
   source {
-    type      = "NO_SOURCE"
-    buildspec = <<-BUILDSPEC
+    type            = "GITHUB"
+    location        = "https://github.com/BLYMO/blymo-spinout.git"
+    git_clone_depth = 1
+    buildspec       = <<-BUILDSPEC
       version: 0.2
       phases:
         install:
@@ -205,33 +207,18 @@ resource "aws_codebuild_project" "provision_tenant" {
         pre_build:
           commands:
             - echo "Provisioning tenant $TENANT_ID"
-            - mkdir -p /build && cd /build
-            # Write the tenant Terraform config dynamically
+            - cd terraform
+            # Write a new tenant module file dynamically.
+            # Using printf to avoid heredoc variable expansion issues in buildspec.
             - |
-              cat > tenant_override.tf <<EOF
-              module "${TENANT_ID}" {
-                source = "./modules/tenant"
-
-                tenant_id = "${TENANT_ID}"
-                subdomain = "${TENANT_ID}"
-                db_schema = "${TENANT_ID}"
-
-                vpc_id                          = module.vpc.vpc_id
-                private_subnet_ids              = module.vpc.private_subnets
-                ecs_cluster_name                = aws_ecs_cluster.main.name
-                alb_listener_arn                = aws_lb_listener.https.arn
-                alb_security_group_id           = aws_security_group.alb.id
-                db_host                         = aws_db_instance.main.address
-                db_port                         = aws_db_instance.main.port
-                db_credentials_secret_arn       = aws_secretsmanager_secret.db_credentials.arn
-                vpc_endpoint_security_group_id  = aws_security_group.vpc_endpoints.id
-                alb_listener_rule_priority      = ${ALB_LISTENER_RULE_PRIORITY}
-              }
-              EOF
+              printf 'module "%s" {\n  source = "./modules/tenant"\n\n  tenant_id = "%s"\n  subdomain = "%s"\n  db_schema = "%s"\n\n  vpc_id                         = module.vpc.vpc_id\n  private_subnet_ids             = module.vpc.private_subnets\n  ecs_cluster_name               = aws_ecs_cluster.main.name\n  alb_listener_arn               = aws_lb_listener.https.arn\n  alb_security_group_id          = aws_security_group.alb.id\n  db_host                        = aws_db_instance.main.address\n  db_port                        = aws_db_instance.main.port\n  db_credentials_secret_arn      = aws_secretsmanager_secret.db_credentials.arn\n  vpc_endpoint_security_group_id = aws_security_group.vpc_endpoints.id\n  alb_listener_rule_priority     = %s\n}\n' \
+                "$TENANT_ID" "$TENANT_ID" "$TENANT_ID" "$TENANT_ID" "$ALB_LISTENER_RULE_PRIORITY" \
+                > "tenant_${TENANT_ID}.tf"
+            - cat "tenant_${TENANT_ID}.tf"
             - terraform init -reconfigure
         build:
           commands:
-            - terraform apply -auto-approve -target="module.${TENANT_ID}"
+            - terraform apply -auto-approve -target="module.$TENANT_ID"
       BUILDSPEC
   }
 
