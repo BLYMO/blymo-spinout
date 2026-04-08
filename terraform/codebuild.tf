@@ -108,6 +108,8 @@ resource "aws_iam_role_policy" "codebuild_terraform_permissions" {
           "ecs:DeregisterTaskDefinition",
           "ecs:DescribeTaskDefinition",
           "ecs:ListTaskDefinitions",
+          "ecs:TagResource",
+          "ecs:UntagResource",
           # IAM
           "iam:CreateRole",
           "iam:DeleteRole",
