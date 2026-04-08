@@ -103,6 +103,7 @@ resource "aws_iam_role_policy" "codebuild_terraform_permissions" {
           "ecs:UpdateService",
           "ecs:DeleteService",
           "ecs:DescribeServices",
+          "ecs:DescribeClusters",
           "ecs:RegisterTaskDefinition",
           "ecs:DeregisterTaskDefinition",
           "ecs:DescribeTaskDefinition",
@@ -136,6 +137,8 @@ resource "aws_iam_role_policy" "codebuild_terraform_permissions" {
           "ec2:RevokeSecurityGroupEgress",
           "ec2:DescribeVpcs",
           "ec2:DescribeSubnets",
+          "ec2:DescribeAvailabilityZones",
+          "ec2:DescribeVpcAttribute",
           "ec2:CreateTags",
           "ec2:DescribeTags",
           # ALB
@@ -154,6 +157,7 @@ resource "aws_iam_role_policy" "codebuild_terraform_permissions" {
           # Secrets Manager (read-only — secrets are pre-created)
           "secretsmanager:GetSecretValue",
           "secretsmanager:DescribeSecret",
+          "secretsmanager:GetResourcePolicy",
           # CodeConnections (GitHub OAuth)
           "codestar-connections:UseConnection",
           "codestar-connections:GetConnection",
