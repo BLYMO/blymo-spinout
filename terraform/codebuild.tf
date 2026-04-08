@@ -153,7 +153,16 @@ resource "aws_iam_role_policy" "codebuild_terraform_permissions" {
           "elasticloadbalancing:DescribeTags",
           # Secrets Manager (read-only — secrets are pre-created)
           "secretsmanager:GetSecretValue",
-          "secretsmanager:DescribeSecret"
+          "secretsmanager:DescribeSecret",
+          # CodeConnections (GitHub OAuth)
+          "codestar-connections:UseConnection",
+          "codestar-connections:GetConnection",
+          "codestar-connections:GetConnectionToken",
+          "codestar-connections:PassConnection",
+          "codeconnections:UseConnection",
+          "codeconnections:GetConnection",
+          "codeconnections:GetConnectionToken",
+          "codeconnections:PassConnection"
         ]
         Resource = "*"
       }
@@ -213,8 +222,8 @@ resource "aws_codebuild_project" "provision_tenant" {
             - |
               printf 'module "%s" {\n  source = "./modules/tenant"\n\n  tenant_id = "%s"\n  subdomain = "%s"\n  db_schema = "%s"\n\n  vpc_id                         = module.vpc.vpc_id\n  private_subnet_ids             = module.vpc.private_subnets\n  ecs_cluster_name               = aws_ecs_cluster.main.name\n  alb_listener_arn               = aws_lb_listener.https.arn\n  alb_security_group_id          = aws_security_group.alb.id\n  db_host                        = aws_db_instance.main.address\n  db_port                        = aws_db_instance.main.port\n  db_credentials_secret_arn      = aws_secretsmanager_secret.db_credentials.arn\n  vpc_endpoint_security_group_id = aws_security_group.vpc_endpoints.id\n  alb_listener_rule_priority     = %s\n}\n' \
                 "$TENANT_ID" "$TENANT_ID" "$TENANT_ID" "$TENANT_ID" "$ALB_LISTENER_RULE_PRIORITY" \
-                > "tenant_${TENANT_ID}.tf"
-            - cat "tenant_${TENANT_ID}.tf"
+                > "tenant_$TENANT_ID.tf"
+            - cat "tenant_$TENANT_ID.tf"
             - terraform init -reconfigure
         build:
           commands:

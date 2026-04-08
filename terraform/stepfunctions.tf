@@ -58,7 +58,30 @@ resource "aws_iam_role_policy" "sfn_lambda" {
   })
 }
 
-# Allow Step Functions to emit CloudWatch logs
+# Allow Step Functions to manage EventBridge rules (needed for .sync CodeBuild integration)
+resource "aws_iam_role_policy" "sfn_events" {
+  name = "n8n-sfn-events-policy"
+  role = aws_iam_role.step_functions.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "events:PutTargets",
+          "events:PutRule",
+          "events:DescribeRule",
+          "events:DeleteRule",
+          "events:RemoveTargets"
+        ]
+        Resource = "arn:aws:events:eu-west-2:656876168893:rule/*"
+      }
+    ]
+  })
+}
+
+
 resource "aws_iam_role_policy" "sfn_logs" {
   name = "n8n-sfn-logs-policy"
   role = aws_iam_role.step_functions.id
@@ -108,7 +131,7 @@ resource "aws_sfn_state_machine" "provision_tenant" {
     States = {
       ProvisionInfrastructure = {
         Type     = "Task"
-        Resource = "arn:aws:states:::codebuild:startBuild.sync:2"
+        Resource = "arn:aws:states:::codebuild:startBuild.sync"
         Parameters = {
           ProjectName = aws_codebuild_project.provision_tenant.name
           EnvironmentVariablesOverride = [
