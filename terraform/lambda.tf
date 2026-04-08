@@ -62,6 +62,7 @@ resource "aws_lambda_function" "create_schema" {
   role          = aws_iam_role.create_schema_lambda.arn
   package_type  = "Image"
   image_uri     = "${aws_ecr_repository.create_schema_lambda.repository_url}:latest"
+  architectures = ["arm64"]
 
   timeout = 30 # seconds
 
