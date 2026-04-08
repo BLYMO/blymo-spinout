@@ -157,6 +157,7 @@ resource "aws_iam_role_policy" "codebuild_terraform_permissions" {
           "elasticloadbalancing:DescribeLoadBalancers",
           "elasticloadbalancing:DescribeLoadBalancerAttributes",
           "elasticloadbalancing:DescribeListeners",
+          "elasticloadbalancing:DescribeListenerAttributes",
           # RDS 
           "rds:DescribeDBInstances",
           "rds:DescribeDBSubnetGroups",
