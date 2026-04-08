@@ -154,6 +154,11 @@ resource "aws_iam_role_policy" "codebuild_terraform_permissions" {
           "elasticloadbalancing:ModifyRule",
           "elasticloadbalancing:AddTags",
           "elasticloadbalancing:DescribeTags",
+          "elasticloadbalancing:DescribeLoadBalancers",
+          "elasticloadbalancing:DescribeListeners",
+          # RDS 
+          "rds:DescribeDBInstances",
+          "rds:DescribeDBSubnetGroups",
           # Secrets Manager (read-only — secrets are pre-created)
           "secretsmanager:GetSecretValue",
           "secretsmanager:DescribeSecret",
