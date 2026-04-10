@@ -1,63 +1,51 @@
 # Project Plan: Multi-Tenant n8n Hosting SaaS
 
-This document tracks the development plan and our current progress.
+This document tracks the development plan, our current progress, and the strategic positioning for the business.
 
-## Phase 1: Minimum Viable Product (MVP)
+## Phase 1: Minimum Viable Product (MVP) - [COMPLETED]
 
 **Goal:** Create a functioning system that can automatically provision and de-provision a dedicated n8n instance for a new tenant.
 
 ### Key Steps
+- [x] **1. Initial Design & Scoping:** Architecture decided (Shared VPC, Fargate per tenant).
+- [x] **2. Project & Terraform Setup:** Modules created, remote state locked in S3.
+- [x] **3. Develop Shared Infrastructure:** VPC, ALB, and RDS Postgres online.
+- [x] **4. Develop Tenant Module:** ECS Service, IAM roles, and target groups.
 
-- [x] **1. Initial Design & Scoping**
-  - [x] Define high-level architecture (Shared VPC, ECS Fargate per tenant).
-  - [x] Choose technology stack (Terraform, AWS Step Functions, Lambda).
-  - [x] Define MVP scope (automated provisioning, no UI/billing).
+## Phase 2: Automation & Production Hardening - [COMPLETED]
 
-- [x] **2. Project & Terraform Setup**
-  - [x] Create project directory structure (`terraform/modules/tenant`).
-  - [x] Configure main Terraform provider with default tags.
-  - [x] Configure S3 backend for remote state management.
+**Goal:** Remove humans from the loop. A tenant must be provisioned instantly via an API call.
 
-- [x] **3. Bootstrap Terraform Backend**
-  - [x] Create a separate Terraform configuration for backend resources (`terraform/setup-backend`).
-  - [x] Run `terraform init` and `terraform apply` to create the S3 bucket and DynamoDB table for state locking.
+- [x] **5. Automate Tenant Provisioning Pipeline**
+  - [x] Designed AWS Step Functions orchestrator.
+  - [x] Created `create-schema` Lambda (fixed arm64 architecture for Apple Silicon).
+  - [x] Created CodeBuild pipeline to dynamically inject `tenant_id` into Terraform.
+  - [x] Exposed `POST /provision` via API Gateway.
+- [x] **6. End-to-End Verification**
+  - [x] Successfully dispatched `curl` command. 
+  - [x] Step Function completed organically; DNS routed `alice` tenant correctly despite HTTPS redirects.
 
-- [x] **4. Develop Shared AWS Infrastructure**
-  - [x] Initialize the main Terraform configuration (`/terraform`).
-  - [x] Define the shared VPC, subnets, and NAT Gateway.
-  - [x] Define the shared ECS Cluster.
-  - [x] Define the shared Application Load Balancer (ALB).
-  - [x] Define the shared RDS Postgres instance.
+## Phase 3: Marketing & Frontend UX - [CURRENT PHASE]
 
-- [x] **5. Develop the Reusable Tenant Module**
-  - [x] Define the input variables for the tenant module (`variables.tf`).
-  - [x] Define the per-tenant ECS Service and Task Definition.
-  - [x] Define the per-tenant IAM roles for security isolation.
-  - [x] Define the per-tenant ALB Target Group and Listener Rule.
+**Goal:** Create a high-converting front door that targets B2B/agencies and accurately prices the underlying AWS isolation.
 
-- [x] **6. Orchestration & End-to-End Testing**
-  - [x] Provision a test tenant using the new module.
-  - [x] Manually create the database schema via a bastion host.
-  - [x] Successfully access the tenant's n8n instance via the ALB, proving the end-to-end flow.
+- [x] **7. Brand & Strategy Setup**
+  - [x] Confirmed premium positioning strategy. Focus heavily on Fargate container isolation and dedicated DB schemas vs. "shared hosting" alternatives.
+- [x] **8. Build the Landing Page**
+  - [x] Created React + Vite single-page app in `/website`.
+  - [x] Styled deep dark glassmorphism modern UI.
+  - [x] Added hero terminal animation to demo the pipeline speed.
+- [x] **9. Go-To-Market Pricing Strategy**
+  - [x] Implemented a **"Trust Ramp"** strategy based on PLG economics.
+  - [x] Starter ($19/mo) - Impulse buy for agencies; starts the trust relationship.
+  - [x] Pro ($79/mo) - 🚀 The core scaling tier featuring **Automated Backups**.
+  - [x] Business & Agency ($149+/mo) - Fully dedicated environment and resources.
 
-## Phase 2: Automation & Production Hardening (Next Steps)
+## Phase 4: Integrations & Live Handover (Next Steps)
 
-- [ ] **7. Automate Tenant Provisioning**
-  - [ ] Design the AWS Step Function state machine for tenant creation.
-  - [ ] Create a Lambda function to replace the manual "CREATE SCHEMA" step.
-  - [ ] Create a CodeBuild project to run `terraform apply` for the tenant module, triggered by the Step Function.
-  - [ ] Create a simple API Gateway endpoint to trigger the Step Function.
-
-- [ ] **8. Harden Security & Monitoring**
-  - [ ] Implement per-tenant database credentials.
-  - [ ] Add robust monitoring and alarms for shared resources (RDS, ALB).
-  - [ ] Refine IAM permissions to be as restrictive as possible.
-
-
-- [ ] **7. Create API Endpoint**
-  - [ ] Develop a simple `/signup` API endpoint (e.g., using API Gateway and Lambda).
-  - [ ] Wire the endpoint to trigger the Step Function execution.
-
-- [ ] **8. End-to-End Testing**
-  - [ ] Test the full flow: API call -> Step Function -> Tenant Provisioned -> n8n accessible.
-  - [ ] Test tenant teardown and resource destruction.
+- [ ] **10. Wire Up the Frontend**
+  - [ ] Connect the "Deploy/Start" buttons in `App.jsx` to actually hit the `POST /provision` API Gateway endpoint using JS `fetch`.
+- [ ] **11. Billing Automation (Stripe)**
+  - [ ] Connect Stripe Checkout so a user can't provision a tenant until a card is charged.
+- [ ] **12. Analytics & User Board**
+  - [ ] Simple dashboard allowing users to see their instance URL and tear it down if needed.
