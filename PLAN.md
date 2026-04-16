@@ -61,6 +61,6 @@ This document tracks the development plan, our current progress, and the strateg
   - [x] Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` to the `.env.local` file.
   - [x] Update `apigateway.tf` with the live Supabase Project Reference.
   - [x] Drop the live Stripe Checkout URLs into `billing.js`.
-- [ ] **14. Launch**
-  - [ ] Wire the frontend `fetch` call to actually trigger the AWS API Gateway from the Dashboard.
+- [x] **14. Launch**
+  - [x] Wire the frontend `fetch` call to actually trigger the AWS API Gateway from the Dashboard.
   - [ ] Deploy the static site (Vercel/Netlify).

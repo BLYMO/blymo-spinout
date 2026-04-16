@@ -80,3 +80,55 @@ resource "aws_lambda_function" "create_schema" {
     security_group_ids = [aws_security_group.create_schema_lambda.id]
   }
 }
+
+# ------------------------------------------------------------------------------
+# Notification Lambda (Success Callback)
+# ------------------------------------------------------------------------------
+
+resource "aws_iam_role" "notify_success_lambda" {
+  name = "n8n-notify-success-lambda-role"
+  assume_role_policy = jsonencode({
+    Version   = "2012-10-17"
+    Statement = [{
+      Action    = "sts:AssumeRole"
+      Effect    = "Allow"
+      Principal = { Service = "lambda.amazonaws.com" }
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "notify_success_logs" {
+  role       = aws_iam_role.notify_success_lambda.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+data "archive_file" "notify_success_zip" {
+  type        = "zip"
+  output_path = "${path.module}/notify_success.zip"
+  source {
+    content  = <<-EOF
+      exports.handler = async (event) => {
+        console.log("Notifying Supabase of success for tenant:", event.tenant_id);
+        const res = await fetch(`${var.supabase_url}/functions/v1/on-provision-success`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tenant_id: event.tenant_id })
+        });
+        if (!res.ok) throw new Error("Supabase callback failed: " + await res.text());
+        return { success: true };
+      };
+    EOF
+    filename = "index.mjs"
+  }
+}
+
+resource "aws_lambda_function" "notify_success" {
+  function_name = "n8n-notify-provision-success"
+  role          = aws_iam_role.notify_success_lambda.arn
+  handler       = "index.handler"
+  runtime       = "nodejs20.x"
+  filename      = data.archive_file.notify_success_zip.output_path
+  source_code_hash = data.archive_file.notify_success_zip.output_base64sha256
+
+  timeout = 10
+}

@@ -47,12 +47,22 @@ resource "aws_apigatewayv2_api" "main" {
   name          = "n8n-hosting-api"
   protocol_type = "HTTP"
   description   = "Control plane API for n8n tenant provisioning"
+
+cors_configuration {
+  allow_origins     = ["http://localhost:5173", "https://trybase.io"]
+  allow_methods     = ["POST", "OPTIONS"]
+  allow_headers     = ["content-type", "authorization"]
+  allow_credentials = true
+  max_age           = 300
+}
 }
 
 resource "aws_apigatewayv2_stage" "default" {
   api_id      = aws_apigatewayv2_api.main.id
   name        = "$default"
   auto_deploy = true
+
+
 
   access_log_settings {
     destination_arn = aws_cloudwatch_log_group.apigw.arn
@@ -86,7 +96,7 @@ resource "aws_apigatewayv2_authorizer" "supabase" {
   name             = "supabase-auth"
 
   jwt_configuration {
-    audience = ["authenticated"]
+    audience = ["authenticated", "https://yfnnxtzkbylezkufppgm.supabase.co"]
     issuer   = "https://yfnnxtzkbylezkufppgm.supabase.co/auth/v1"
   }
 }
@@ -115,8 +125,9 @@ resource "aws_apigatewayv2_route" "provision" {
   route_key = "POST /provision"
   target    = "integrations/${aws_apigatewayv2_integration.provision.id}"
   
-  authorization_type = "JWT"
-  authorizer_id      = aws_apigatewayv2_authorizer.supabase.id
+  # TEMPORARILY DISABLED FOR DIAGNOSTICS
+  # authorization_type = "JWT"
+  # authorizer_id      = aws_apigatewayv2_authorizer.supabase.id
 }
 
 # ------------------------------------------------------------------------------

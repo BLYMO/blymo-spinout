@@ -166,6 +166,30 @@ resource "aws_sfn_state_machine" "provision_tenant" {
           }
         }
         ResultPath = "$.schema_result"
+        Next       = "NotifySuccess"
+        Retry = [{
+          ErrorEquals     = ["Lambda.ServiceException", "Lambda.AWSLambdaException"]
+          IntervalSeconds = 5
+          MaxAttempts     = 3
+          BackoffRate     = 2
+        }]
+        Catch = [{
+          ErrorEquals = ["States.ALL"]
+          Next        = "ProvisioningFailed"
+          ResultPath  = "$.error"
+        }]
+      }
+
+      NotifySuccess = {
+        Type     = "Task"
+        Resource = "arn:aws:states:::lambda:invoke"
+        Parameters = {
+          FunctionName = aws_lambda_function.notify_success.arn
+          Payload = {
+            "tenant_id.$" = "$.tenant_id"
+          }
+        }
+        ResultPath = "$.notify_result"
         Next       = "ProvisioningComplete"
         Retry = [{
           ErrorEquals     = ["Lambda.ServiceException", "Lambda.AWSLambdaException"]
