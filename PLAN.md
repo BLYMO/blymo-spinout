@@ -25,27 +25,42 @@ This document tracks the development plan, our current progress, and the strateg
   - [x] Successfully dispatched `curl` command. 
   - [x] Step Function completed organically; DNS routed `alice` tenant correctly despite HTTPS redirects.
 
-## Phase 3: Marketing & Frontend UX - [CURRENT PHASE]
+## Phase 3: Marketing & Frontend UX - [COMPLETED]
 
 **Goal:** Create a high-converting front door that targets B2B/agencies and accurately prices the underlying AWS isolation.
 
 - [x] **7. Brand & Strategy Setup**
   - [x] Confirmed premium positioning strategy. Focus heavily on Fargate container isolation and dedicated DB schemas vs. "shared hosting" alternatives.
 - [x] **8. Build the Landing Page**
-  - [x] Created React + Vite single-page app in `/website`.
+  - [x] Created React + Vite single-page app in `nexscale-web/`.
   - [x] Styled deep dark glassmorphism modern UI.
-  - [x] Added hero terminal animation to demo the pipeline speed.
+  - [x] Implemented dual-mode visualizer (Quick Launch GUI simulator and API Control CLI demo).
 - [x] **9. Go-To-Market Pricing Strategy**
   - [x] Implemented a **"Trust Ramp"** strategy based on PLG economics.
-  - [x] Starter ($19/mo) - Impulse buy for agencies; starts the trust relationship.
-  - [x] Pro ($79/mo) - 🚀 The core scaling tier featuring **Automated Backups**.
-  - [x] Business & Agency ($149+/mo) - Fully dedicated environment and resources.
+  - [x] 7-Day Free Trials with countdown timer urgency.
+  - [x] Starter ($19/mo), Pro ($79/mo), Business & Agency ($149+/mo).
 
-## Phase 4: Integrations & Live Handover (Next Steps)
+## Phase 4: Security & Monetization - [COMPLETED]
 
-- [ ] **10. Wire Up the Frontend**
-  - [ ] Connect the "Deploy/Start" buttons in `App.jsx` to actually hit the `POST /provision` API Gateway endpoint using JS `fetch`.
-- [ ] **11. Billing Automation (Stripe)**
-  - [ ] Connect Stripe Checkout so a user can't provision a tenant until a card is charged.
-- [ ] **12. Analytics & User Board**
-  - [ ] Simple dashboard allowing users to see their instance URL and tear it down if needed.
+**Goal:** Shield the provisioning API from abuse and set up the Stripe billing flow.
+
+- [x] **10. Authentication & Security (The Shield)**
+  - [x] Initialized Supabase client for frontend auth tracking.
+  - [x] Built Login/Signup views in `nexscale-web/src/views/Auth.jsx`.
+  - [x] Added a **JWT Authorizer** to the AWS API Gateway (`apigateway.tf`), restricting `/provision` exclusively to Supabase-authenticated users.
+- [x] **11. Web App Structure**
+  - [x] Disconnected monolithic App.jsx into logical routes (`/`, `/auth`, `/dashboard`) using `react-router-dom`.
+  - [x] Built a clean, authenticated Dashboard view to list instances and show status.
+- [x] **12. Billing Automation (Stripe)**
+  - [x] Built Stripe redirect helper (`billing.js`) for Stripe Checkout links.
+  - [x] Implemented delayed-charge mechanics via `trial_period_days: 14`, capturing cards upfront but deferring the actual charge.
+
+## Phase 5: Go-Live Checklist (Next Steps)
+
+- [x] **13. Final Configurations**
+  - [x] Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` to the `.env.local` file.
+  - [x] Update `apigateway.tf` with the live Supabase Project Reference.
+  - [x] Drop the live Stripe Checkout URLs into `billing.js`.
+- [ ] **14. Launch**
+  - [ ] Wire the frontend `fetch` call to actually trigger the AWS API Gateway from the Dashboard.
+  - [ ] Deploy the static site (Vercel/Netlify).

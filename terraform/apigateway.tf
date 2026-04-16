@@ -76,6 +76,22 @@ resource "aws_cloudwatch_log_group" "apigw" {
 }
 
 # ------------------------------------------------------------------------------
+# JWT Authorizer (Supabase)
+# ------------------------------------------------------------------------------
+
+resource "aws_apigatewayv2_authorizer" "supabase" {
+  api_id           = aws_apigatewayv2_api.main.id
+  authorizer_type  = "JWT"
+  identity_sources = ["$request.header.Authorization"]
+  name             = "supabase-auth"
+
+  jwt_configuration {
+    audience = ["authenticated"]
+    issuer   = "https://yfnnxtzkbylezkufppgm.supabase.co/auth/v1"
+  }
+}
+
+# ------------------------------------------------------------------------------
 # POST /provision  →  Start Step Function execution
 # ------------------------------------------------------------------------------
 
@@ -98,6 +114,9 @@ resource "aws_apigatewayv2_route" "provision" {
   api_id    = aws_apigatewayv2_api.main.id
   route_key = "POST /provision"
   target    = "integrations/${aws_apigatewayv2_integration.provision.id}"
+  
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.supabase.id
 }
 
 # ------------------------------------------------------------------------------

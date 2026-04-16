@@ -9,7 +9,8 @@ resource "random_password" "db_master_password" {
 
 # Store the generated password securely in AWS Secrets Manager.
 resource "aws_secretsmanager_secret" "db_credentials" {
-  name = "n8n-hosting/rds-master-credentials"
+  name_prefix             = "n8n-hosting/rds-master-credentials-"
+  recovery_window_in_days = 0
 }
 
 resource "aws_secretsmanager_secret_version" "db_credentials" {
