@@ -53,7 +53,10 @@ resource "aws_iam_role_policy" "sfn_lambda" {
     Statement = [{
       Effect   = "Allow"
       Action   = ["lambda:InvokeFunction"]
-      Resource = aws_lambda_function.create_schema.arn
+      Resource = [
+        aws_lambda_function.create_schema.arn,
+        aws_lambda_function.notify_success.arn
+      ]
     }]
   })
 }
