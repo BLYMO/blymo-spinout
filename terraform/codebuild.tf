@@ -164,10 +164,16 @@ resource "aws_iam_role_policy" "codebuild_terraform_permissions" {
           "rds:DescribeDBInstances",
           "rds:DescribeDBSubnetGroups",
           "rds:ListTagsForResource",
-          # Secrets Manager (read-only — secrets are pre-created)
+          # Secrets Manager (full access — Terraform may create/delete secrets during state reconciliation)
           "secretsmanager:GetSecretValue",
           "secretsmanager:DescribeSecret",
           "secretsmanager:GetResourcePolicy",
+          "secretsmanager:CreateSecret",
+          "secretsmanager:DeleteSecret",
+          "secretsmanager:PutSecretValue",
+          "secretsmanager:TagResource",
+          "secretsmanager:UntagResource",
+          "secretsmanager:RestoreSecret",
           # CodeConnections (GitHub OAuth)
           "codestar-connections:UseConnection",
           "codestar-connections:GetConnection",
