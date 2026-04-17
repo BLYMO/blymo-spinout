@@ -182,9 +182,22 @@ resource "aws_iam_role_policy" "codebuild_terraform_permissions" {
           "codeconnections:UseConnection",
           "codeconnections:GetConnection",
           "codeconnections:GetConnectionToken",
-          "codeconnections:PassConnection"
+          "codeconnections:PassConnection",
+          # S3 (Tenant Registry Persistence)
+          "s3:ListBucket",
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject"
         ]
         Resource = "*"
+      },
+      {
+        Effect = "Allow",
+        Action = ["s3:ListBucket", "s3:GetObject", "s3:PutObject", "s3:DeleteObject"]
+        Resource = [
+          "arn:aws:s3:::n8n-hosting-saas-tfstate",
+          "arn:aws:s3:::n8n-hosting-saas-tfstate/tenants/*"
+        ]
       }
     ]
   })
@@ -237,6 +250,8 @@ resource "aws_codebuild_project" "provision_tenant" {
           commands:
             - echo "Provisioning tenant $TENANT_ID"
             - cd terraform
+            # Pull existing tenants from S3 to ensure Terraform knows about the full fleet
+            - aws s3 sync s3://n8n-hosting-saas-tfstate/tenants/ . || echo "No existing tenants found."
             # Write a new tenant module file dynamically.
             # Using printf to avoid heredoc variable expansion issues in buildspec.
             - |
@@ -250,6 +265,10 @@ resource "aws_codebuild_project" "provision_tenant" {
         build:
           commands:
             - terraform apply -auto-approve -target="module.$TENANT_ID"
+        post_build:
+          commands:
+            # Persist the newly created tenant config back to S3
+            - aws s3 cp "tenant_$TENANT_ID.tf" "s3://n8n-hosting-saas-tfstate/tenants/tenant_$TENANT_ID.tf"
       BUILDSPEC
   }
 

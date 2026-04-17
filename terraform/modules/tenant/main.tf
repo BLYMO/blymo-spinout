@@ -220,22 +220,31 @@ resource "aws_iam_role" "ecs_task_role" {
   })
 }
 
-# Policy to allow the task to read the specific database credentials secret.
-resource "aws_iam_policy" "read_db_secret" {
-  name   = "n8n-read-db-secret-policy-${var.tenant_id}"
+# Policy to allow the task to read necessary secrets from Secrets Manager
+resource "aws_iam_policy" "read_task_secrets" {
+  name   = "n8n-read-secrets-policy-${var.tenant_id}"
   policy = jsonencode({
     Version   = "2012-10-17"
     Statement = [{
       Action   = "secretsmanager:GetSecretValue"
       Effect   = "Allow"
-      Resource = var.db_credentials_secret_arn
+      Resource = [
+        var.db_credentials_secret_arn,
+        var.n8n_encryption_key_secret_arn,
+        var.smtp_api_key_secret_arn
+      ]
     }]
   })
 }
 
-resource "aws_iam_role_policy_attachment" "read_db_secret_attachment" {
+resource "aws_iam_role_policy_attachment" "read_secrets_attachment_task" {
   role       = aws_iam_role.ecs_task_role.name
-  policy_arn = aws_iam_policy.read_db_secret.arn
+  policy_arn = aws_iam_policy.read_task_secrets.arn
+}
+
+resource "aws_iam_role_policy_attachment" "read_secrets_attachment_execution" {
+  role       = aws_iam_role.ecs_execution_role.name
+  policy_arn = aws_iam_policy.read_task_secrets.arn
 }
 
 # Policy to allow the task to communicate with the SSM agent for ECS Exec
@@ -261,7 +270,4 @@ resource "aws_iam_role_policy_attachment" "ssm_exec_attachment" {
   policy_arn = aws_iam_policy.ssm_exec_policy.arn
 }
 
-resource "aws_iam_role_policy_attachment" "execution_read_db_secret_attachment" {
-  role       = aws_iam_role.ecs_execution_role.name
-  policy_arn = aws_iam_policy.read_db_secret.arn
-}
+

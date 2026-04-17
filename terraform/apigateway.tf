@@ -125,9 +125,8 @@ resource "aws_apigatewayv2_route" "provision" {
   route_key = "POST /provision"
   target    = "integrations/${aws_apigatewayv2_integration.provision.id}"
   
-  # TEMPORARILY DISABLED FOR DIAGNOSTICS
-  # authorization_type = "JWT"
-  # authorizer_id      = aws_apigatewayv2_authorizer.supabase.id
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.supabase.id
 }
 
 # ------------------------------------------------------------------------------
