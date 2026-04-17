@@ -219,7 +219,7 @@ resource "aws_codebuild_project" "provision_tenant" {
 
   environment {
     compute_type                = "BUILD_GENERAL1_SMALL"
-    image                       = "public.ecr.aws/hashicorp/terraform:1.8"
+    image                       = "aws/codebuild/amazonlinux2-x86_64-standard:5.0"
     type                        = "LINUX_CONTAINER"
     image_pull_credentials_type = "CODEBUILD"
 
@@ -244,7 +244,10 @@ resource "aws_codebuild_project" "provision_tenant" {
       phases:
         install:
           commands:
-            - echo "Terraform version:"
+            - echo "Installing Terraform 1.8.0..."
+            - sudo yum install -y yum-utils
+            - sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
+            - sudo yum -y install terraform-1.8.0
             - terraform version
         pre_build:
           commands:
