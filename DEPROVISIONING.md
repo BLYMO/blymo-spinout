@@ -18,6 +18,11 @@ cd terraform
 terraform destroy -target="module.<TENANT_ID>"
 ```
 
+> [!TIP]
+> **If Terraform hangs** at the "Still destroying... [id=subnet-..., id=sg-...]" phase for more than 5 minutes, it is likely blocked by an orphaned ENI. Run the cleanup script from the root directory:
+> `./cleanup-enis.sh`
+
+
 ### 2. Cleanup Database Schema
 Since we use a shared RDS instance, Terraform will not automatically drop the Postgres schema. You must connect to the RDS instance (via the Bastion host) and run:
 

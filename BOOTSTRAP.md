@@ -106,6 +106,23 @@ aws lambda update-function-code \
   --region eu-west-2
 ```
 
+## 7. The Golden Rule: Sync Tenants Before Local Apply
+**Problem**: The Step Function orchestrator dynamically creates `tenant_*.tf` files in CodeBuild and stores them in S3. If you run `terraform apply` locally on your Mac without these files, Terraform will think they should be deleted and will **destroy your entire production fleet**.
+
+**The Fix**:
+Always run the sync script **before** you touch Terraform locally:
+
+```bash
+./sync-tenants.sh
+```
+
+This downloads all current tenant definitions from the S3 Registry to your `terraform/` folder, ensuring your Mac is in perfect sync with the cloud.
+
+---
+
+> [!CAUTION]
+> If you run `terraform plan` and see **"Resources to destroy: [Any Number]"**, STOP IMMEDIATELY. Run `./sync-tenants.sh` and plan again. You should see "0 to destroy".
+
 ---
 
 > [!NOTE]

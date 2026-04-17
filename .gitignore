@@ -32,3 +32,4 @@ override.tf.json
 # Lambda build artifacts
 lambda/create-schema.zip
 *.tfvars
+terraform/authorizer.zip

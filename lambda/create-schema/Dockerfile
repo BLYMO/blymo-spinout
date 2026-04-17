@@ -3,9 +3,8 @@
 # 1. Start from the official AWS base image for Python 3.9 Lambdas
 FROM public.ecr.aws/lambda/python:3.9
 
-# 2. Install the system-level dependencies for psycopg2
-# This base image uses yum, not apt-get or apk.
-RUN yum install -y gcc postgresql-devel
+# 2. No OS-level postgres dependencies needed because we use psycopg2-binary
+# This keeps the image small and secure!
 
 # 3. Copy the requirements file
 COPY requirements.txt .
