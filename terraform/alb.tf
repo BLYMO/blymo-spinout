@@ -79,7 +79,7 @@ resource "aws_lb_listener" "https" {
   # IMPORTANT: You must create a certificate in AWS Certificate Manager (ACM)
   # for your domain and paste the ARN here.
   # For example: "arn:aws:acm:eu-west-2:123456789012:certificate/your-cert-id"
-  certificate_arn = "arn:aws:acm:eu-west-2:656876168893:certificate/49a652d8-dc22-4689-a151-4da7261ca94c" # <--- REAL ARN NOW INJECTED
+  certificate_arn = "arn:aws:acm:eu-west-2:656876168893:certificate/cccdf28e-f81f-46cd-bff4-d17f9916fe5f" # <--- REAL ARN NOW INJECTED
 
   # Default action for requests that don't match any tenant-specific rules.
   # We'll forward them to the default target group which will return a 404.
