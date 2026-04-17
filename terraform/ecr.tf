@@ -30,7 +30,7 @@ resource "null_resource" "mirror_n8n" {
   provisioner "local-exec" {
     command = <<EOF
       aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin 656876168893.dkr.ecr.eu-west-2.amazonaws.com
-      docker pull n8nio/n8n:latest
+      docker pull --platform linux/arm64 n8nio/n8n:latest
       docker tag n8nio/n8n:latest ${aws_ecr_repository.n8n_base.repository_url}:latest
       docker push ${aws_ecr_repository.n8n_base.repository_url}:latest
 EOF

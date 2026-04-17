@@ -47,6 +47,11 @@ resource "aws_ecs_task_definition" "n8n" {
   execution_role_arn = aws_iam_role.ecs_execution_role.arn
   task_role_arn      = aws_iam_role.ecs_task_role.arn
 
+  runtime_platform {
+    operating_system_family = "LINUX"
+    cpu_architecture        = "ARM64"
+  }
+
   container_definitions = jsonencode([
     {
       name      = "n8n"
@@ -154,6 +159,7 @@ resource "aws_lb_target_group" "n8n" {
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
   target_type = "ip"
+  deregistration_delay = 30
 
   health_check {
     path                = "/healthz"

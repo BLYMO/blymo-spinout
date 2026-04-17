@@ -33,3 +33,6 @@ override.tf.json
 lambda/create-schema.zip
 *.tfvars
 terraform/authorizer.zip
+terraform/tenant_neat-pipe-jumps.tf
+.gitignore
+terraform/tenant_neat-wolf-beans.tf

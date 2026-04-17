@@ -72,7 +72,7 @@ resource "aws_db_instance" "main" {
   identifier             = "n8n-hosting-shared-db"
   engine                 = "postgres"
   engine_version         = "16.11"
-  instance_class         = "db.t3.micro" # Small, cost-effective instance for MVP
+  instance_class         = "db.t4g.micro" # Upgraded to ARM64 (Graviton 2) for better price/performance
   allocated_storage      = 20
   storage_type           = "gp2"
   username               = jsondecode(aws_secretsmanager_secret_version.db_credentials.secret_string)["username"]
