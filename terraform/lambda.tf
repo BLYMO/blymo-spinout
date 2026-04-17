@@ -102,21 +102,62 @@ resource "aws_iam_role_policy_attachment" "notify_success_logs" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
+# Store the Supabase service role key in Secrets Manager
+# Value is managed manually via AWS CLI — NOT by Terraform
+# Run once: aws secretsmanager put-secret-value \
+#   --secret-id "n8n-hosting/supabase-service-role-key" \
+#   --secret-string "your-service-role-key" \
+#   --region eu-west-2
+resource "aws_secretsmanager_secret" "supabase_service_role_key" {
+  name                    = "n8n-hosting/supabase-service-role-key"
+  description             = "Supabase service role key for the notify_success Lambda"
+  recovery_window_in_days = 0
+}
+
+# Grant the Lambda permission to read the Supabase key secret
+resource "aws_iam_policy" "notify_success_read_secret" {
+  name = "n8n-notify-success-read-secret"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = "secretsmanager:GetSecretValue"
+      Resource = aws_secretsmanager_secret.supabase_service_role_key.arn
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "notify_success_read_secret" {
+  role       = aws_iam_role.notify_success_lambda.name
+  policy_arn = aws_iam_policy.notify_success_read_secret.arn
+}
+
 data "archive_file" "notify_success_zip" {
   type        = "zip"
   output_path = "${path.module}/notify_success.zip"
   source {
     content  = <<-EOF
+      import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
+
+      const sm = new SecretsManagerClient({ region: process.env.AWS_REGION });
+
       export const handler = async (event) => {
         console.log("Notifying Supabase of success for tenant:", event.tenant_id);
+
+        // Fetch the Supabase service role key at runtime from Secrets Manager
+        const { SecretString } = await sm.send(
+          new GetSecretValueCommand({ SecretId: process.env.SUPABASE_SERVICE_ROLE_KEY_ARN })
+        );
+
         const res = await fetch(`${var.supabase_url}/functions/v1/on-provision-success`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${var.supabase_service_role_key}`
+            'Authorization': `Bearer $${SecretString}`
           },
           body: JSON.stringify({ tenant_id: event.tenant_id })
         });
+
         if (!res.ok) throw new Error("Supabase callback failed: " + await res.text());
         return { success: true };
       };
@@ -126,12 +167,17 @@ data "archive_file" "notify_success_zip" {
 }
 
 resource "aws_lambda_function" "notify_success" {
-  function_name = "n8n-notify-provision-success"
-  role          = aws_iam_role.notify_success_lambda.arn
-  handler       = "index.handler"
-  runtime       = "nodejs20.x"
-  filename      = data.archive_file.notify_success_zip.output_path
+  function_name    = "n8n-notify-provision-success"
+  role             = aws_iam_role.notify_success_lambda.arn
+  handler          = "index.handler"
+  runtime          = "nodejs20.x"
+  filename         = data.archive_file.notify_success_zip.output_path
   source_code_hash = data.archive_file.notify_success_zip.output_base64sha256
+  timeout          = 10
 
-  timeout = 10
+  environment {
+    variables = {
+      SUPABASE_SERVICE_ROLE_KEY_ARN = aws_secretsmanager_secret.supabase_service_role_key.arn
+    }
+  }
 }
