@@ -3,6 +3,7 @@ import json
 import boto3
 import psycopg2
 import logging
+import re
 
 # Set up logging
 logger = logging.getLogger()
@@ -34,8 +35,9 @@ def handler(event, context):
 
     try:
         tenant_id = event['tenant_id']
-        if not tenant_id or not tenant_id.isalnum():
-            raise ValueError("Invalid tenant_id provided. Must be alphanumeric.")
+        # Relaxed validation: allow alphanumeric and hyphens
+        if not tenant_id or not re.match(r'^[a-zA-Z0-9-]+$', tenant_id):
+            raise ValueError("Invalid tenant_id provided. Must be alphanumeric or hyphens.")
 
         db_host = os.environ['DB_HOST']
         db_port = os.environ['DB_PORT']
@@ -77,7 +79,4 @@ def handler(event, context):
 
     except Exception as e:
         logger.error(f"An error occurred: {e}")
-        return {
-            'statusCode': 500,
-            'body': json.dumps({'error': str(e)})
-        }
+        raise e
