@@ -107,11 +107,14 @@ data "archive_file" "notify_success_zip" {
   output_path = "${path.module}/notify_success.zip"
   source {
     content  = <<-EOF
-      exports.handler = async (event) => {
+      export const handler = async (event) => {
         console.log("Notifying Supabase of success for tenant:", event.tenant_id);
         const res = await fetch(`${var.supabase_url}/functions/v1/on-provision-success`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${var.supabase_service_role_key}`
+          },
           body: JSON.stringify({ tenant_id: event.tenant_id })
         });
         if (!res.ok) throw new Error("Supabase callback failed: " + await res.text());

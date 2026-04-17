@@ -83,3 +83,15 @@ variable "vpc_endpoint_security_group_id" {
   description = "The ID of the security group for the VPC endpoints."
   type        = string
 }
+
+variable "n8n_encryption_key_secret_arn" {
+  description = "ARN of the Secrets Manager secret holding this tenant's unique N8N_ENCRYPTION_KEY."
+  type        = string
+  sensitive   = true
+}
+
+variable "smtp_api_key_secret_arn" {
+  description = "ARN of the Secrets Manager secret holding the Resend SMTP API key."
+  type        = string
+  sensitive   = true
+}

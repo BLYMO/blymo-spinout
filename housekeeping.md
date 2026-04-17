@@ -31,3 +31,6 @@ Check for "zombie" services that are trying to run without associated workspace 
 - [ ] Review AWS Billing for unexpected cost spikes in Secrets Manager or ECS.
 - [ ] Audit Supabase `workspaces` table for any records stuck in `provisioning` status for > 24 hours.
 - [ ] Verify Resend email delivery rates and check for bounces.
+
+
+Stuck ENIs: Lambda VPC ENIs can get orphaned during an interrupted destroy. Find them in EC2 → Network Interfaces and delete manually, then re-run terraform destroy.

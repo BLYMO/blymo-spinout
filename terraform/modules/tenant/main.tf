@@ -59,21 +59,61 @@ resource "aws_ecs_task_definition" "n8n" {
         protocol      = "tcp"
       }]
       environment = [
-        { name = "DB_TYPE", value = "postgres" },
-        { name = "DB_HOST", value = var.db_host },
-        { name = "DB_PORT", value = tostring(var.db_port) },
-        { name = "DB_DATABASE", value = var.db_schema },
-        { name = "N8N_HOST", value = "${var.subdomain}.n8n.blymo.co.uk" },
-        # Add any other n8n-specific environment variables here
+        # --- Database ---
+        { name = "DB_TYPE",              value = "postgresdb" },
+        { name = "DB_POSTGRESDB_HOST",   value = var.db_host },
+        { name = "DB_POSTGRESDB_PORT",   value = tostring(var.db_port) },
+        { name = "DB_POSTGRESDB_DATABASE", value = "postgres" },
+        { name = "DB_POSTGRESDB_SCHEMA", value = var.db_schema },
+
+        # --- n8n URL / Routing ---
+        { name = "N8N_HOST",             value = "${var.subdomain}.trybase.io" },
+        { name = "N8N_PROTOCOL",         value = "https" },
+        { name = "N8N_PORT",             value = "5678" },
+        { name = "WEBHOOK_URL",          value = "https://${var.subdomain}.trybase.io" },
+        { name = "N8N_EDITOR_BASE_URL",  value = "https://${var.subdomain}.trybase.io" },
+
+        # --- Execution Limits (billing protection) ---
+        { name = "EXECUTIONS_TIMEOUT",          value = "3600" },
+        { name = "EXECUTIONS_TIMEOUT_MAX",       value = "7200" },
+        { name = "EXECUTIONS_DATA_MAX_AGE",      value = "7" },
+        { name = "EXECUTIONS_DATA_SAVE_ON_SUCCESS", value = "all" },
+        { name = "EXECUTIONS_DATA_SAVE_ON_ERROR",   value = "all" },
+        { name = "N8N_CONCURRENCY_PRODUCTION_LIMIT", value = "5" },
+
+        # --- SMTP Email (via Resend) ---
+        { name = "N8N_EMAIL_MODE",       value = "smtp" },
+        { name = "N8N_SMTP_HOST",        value = "smtp.resend.com" },
+        { name = "N8N_SMTP_PORT",        value = "465" },
+        { name = "N8N_SMTP_SSL",         value = "true" },
+        { name = "N8N_SMTP_USER",        value = "resend" },
+        { name = "N8N_SMTP_SENDER",      value = "noreply@${var.subdomain}.trybase.io" },
+
+        # --- Privacy & UX ---
+        { name = "N8N_DIAGNOSTICS_ENABLED",              value = "false" },
+        { name = "N8N_VERSION_NOTIFICATIONS_ENABLED",    value = "false" },
+        { name = "N8N_PERSONALIZATION_ENABLED",          value = "false" },
+        { name = "N8N_TEMPLATES_ENABLED",                value = "true" },
+
+        # --- AI Assistant (swap URL for custom proxy when ready) ---
+        { name = "N8N_AI_ASSISTANT_BASE_URL", value = "https://ai-assistant.n8n.io" },
       ]
       secrets = [
         {
-          name      = "DB_USER"
+          name      = "DB_POSTGRESDB_USER"
           valueFrom = "${var.db_credentials_secret_arn}:username::"
         },
         {
-          name      = "DB_PASSWORD"
+          name      = "DB_POSTGRESDB_PASSWORD"
           valueFrom = "${var.db_credentials_secret_arn}:password::"
+        },
+        {
+          name      = "N8N_ENCRYPTION_KEY"
+          valueFrom = var.n8n_encryption_key_secret_arn
+        },
+        {
+          name      = "N8N_SMTP_PASS"
+          valueFrom = var.smtp_api_key_secret_arn
         }
       ]
     }
