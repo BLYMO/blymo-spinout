@@ -70,6 +70,8 @@ resource "aws_ecs_task_definition" "n8n" {
         { name = "DB_POSTGRESDB_PORT",   value = tostring(var.db_port) },
         { name = "DB_POSTGRESDB_DATABASE", value = "postgres" },
         { name = "DB_POSTGRESDB_SCHEMA", value = var.db_schema },
+        { name = "DB_POSTGRESDB_SSL",    value = "true" },
+        { name = "DB_POSTGRESDB_SSL_REJECT_UNAUTHORIZED", value = "false" }, # Allow AWS certificates that may not be in the internal Node.js trust store
 
         # --- n8n URL / Routing ---
         { name = "N8N_HOST",             value = "${var.subdomain}.n8n.trybase.io" },

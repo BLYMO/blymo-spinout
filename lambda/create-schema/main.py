@@ -56,7 +56,8 @@ def handler(event, context):
             user=db_user,
             password=db_password,
             database='postgres',
-            connect_timeout=5
+            connect_timeout=5,
+            sslmode='require' # Bypass RDS rds.force_ssl strict defaults by speaking SSL natively
         )
         
         conn.autocommit = True
