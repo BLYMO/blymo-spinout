@@ -99,7 +99,7 @@ resource "aws_ecs_task_definition" "n8n" {
         { name = "N8N_VERSION_NOTIFICATIONS_ENABLED",    value = "false" },
         { name = "N8N_PERSONALIZATION_ENABLED",          value = "false" },
         { name = "N8N_TEMPLATES_ENABLED",                value = "true" },
-        { name = "NODES_EXCLUDE",                        value = "[\"n8n-nodes-base.executeCommand\", \"n8n-nodes-base.readWriteFile\"]" },
+        { name = "NODES_EXCLUDE",                        value = "[\"n8n-nodes-base.executeCommand\",\"n8n-nodes-base.readWriteFile\"]" },
 
         # --- AI Assistant (swap URL for custom proxy when ready) ---
         { name = "N8N_AI_ASSISTANT_BASE_URL", value = "https://ai-assistant.n8n.io" },
@@ -121,7 +121,16 @@ resource "aws_ecs_task_definition" "n8n" {
           name      = "N8N_SMTP_PASS"
           valueFrom = var.smtp_api_key_secret_arn
         }
-      ]
+      ],
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = "/ecs/n8n-tenant-logs"
+          "awslogs-region"        = "eu-west-2"
+          "awslogs-stream-prefix" = var.tenant_id
+          "awslogs-create-group"  = "true"
+        }
+      }
     }
   ])
 }
