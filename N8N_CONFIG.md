@@ -132,11 +132,11 @@ resource "aws_secretsmanager_secret_version" "miles_encryption_key" {
   secret_string = random_password.miles_encryption_key.result
 }
 
-module "miles" {
+module "miles-davis" {
   source    = "./modules/tenant"
-  tenant_id = "miles"
-  subdomain = "miles"
-  db_schema = "miles"
+  tenant_id = "miles-davis"
+  subdomain = "miles-davis"
+  db_schema = "miles_davis" # Use underscores for the DB schema name!
 
   vpc_id                         = module.vpc.vpc_id
   private_subnet_ids             = module.vpc.private_subnets

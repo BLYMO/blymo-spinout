@@ -39,6 +39,10 @@ def handler(event, context):
         if not tenant_id or not re.match(r'^[a-zA-Z0-9-]+$', tenant_id):
             raise ValueError("Invalid tenant_id provided. Must be alphanumeric or hyphens.")
 
+        # Sanitize tenant_id for use as a physical database schema name.
+        # Postgres identifiers with hyphens require strict quoting which n8n sometimes misses.
+        db_schema = tenant_id.replace('-', '_')
+
         db_host = os.environ['DB_HOST']
         db_port = os.environ['DB_PORT']
         
@@ -62,15 +66,15 @@ def handler(event, context):
         
         conn.autocommit = True
         
-        logger.info(f"Successfully connected to database. Creating schema for tenant: {tenant_id}")
+        logger.info(f"Successfully connected to database. Creating schema: {db_schema} (for tenant: {tenant_id})")
 
         with conn.cursor() as cursor:
             # Use a parameterized query to prevent SQL injection, even from internal sources.
-            # The schema name is wrapped in quotes to handle potential keyword conflicts.
+            # The schema name is wrapped in quotes as an extra safety layer.
             # "CREATE SCHEMA IF NOT EXISTS" is a safe way to make the operation idempotent.
-            cursor.execute("CREATE SCHEMA IF NOT EXISTS %s;", (psycopg2.extensions.AsIs(f'"{tenant_id}"'),))
+            cursor.execute("CREATE SCHEMA IF NOT EXISTS %s;", (psycopg2.extensions.AsIs(f'"{db_schema}"'),))
         
-        logger.info(f"Successfully created schema '{tenant_id}'")
+        logger.info(f"Successfully created schema '{db_schema}'")
         conn.close()
 
         return {
