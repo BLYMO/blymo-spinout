@@ -167,6 +167,7 @@ resource "aws_iam_role_policy" "codebuild_terraform_permissions" {
           "rds:ListTagsForResource",
           "rds:ModifyDBInstance",
           "rds:DescribeDBParameterGroups",
+          "rds:DescribeDBParameters",
           "rds:CreateDBParameterGroup",
           "rds:ModifyDBParameterGroup",
           "rds:DeleteDBParameterGroup",
