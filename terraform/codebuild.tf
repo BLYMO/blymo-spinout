@@ -164,6 +164,7 @@ resource "aws_iam_role_policy" "codebuild_terraform_permissions" {
           "rds:DescribeDBInstances",
           "rds:DescribeDBSubnetGroups",
           "rds:ListTagsForResource",
+          "rds:ModifyDBInstance",
           # Secrets Manager (full access — Terraform may create/delete secrets during state reconciliation)
           "secretsmanager:GetSecretValue",
           "secretsmanager:DescribeSecret",
