@@ -142,6 +142,7 @@ resource "aws_ecs_service" "n8n" {
   desired_count   = 1 # This can be exposed as a variable for tiered plans
   launch_type     = "FARGATE"
   enable_execute_command = true
+  wait_for_steady_state  = true # Fixes the 503 error: don't report success until the app is fully online
 
   network_configuration {
     security_groups = [aws_security_group.n8n.id]

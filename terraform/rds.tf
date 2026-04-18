@@ -67,6 +67,17 @@ resource "aws_db_subnet_group" "default" {
   subnet_ids = module.vpc.private_subnets
 }
 
+# Custom Parameter Group to disable forced SSL for internal private VPC connections
+resource "aws_db_parameter_group" "main" {
+  name   = "n8n-hosting-pg16-params"
+  family = "postgres16"
+
+  parameter {
+    name  = "rds.force_ssl"
+    value = "0"
+  }
+}
+
 # The RDS Postgres database instance.
 resource "aws_db_instance" "main" {
   identifier             = "n8n-hosting-shared-db"
@@ -79,6 +90,7 @@ resource "aws_db_instance" "main" {
   password               = jsondecode(aws_secretsmanager_secret_version.db_credentials.secret_string)["password"]
   db_subnet_group_name   = aws_db_subnet_group.default.name
   vpc_security_group_ids = [aws_security_group.rds.id]
+  parameter_group_name   = aws_db_parameter_group.main.name
   publicly_accessible    = false # Important for security
   apply_immediately      = true  # Force architectural changes to happen now, not during the next maintenance window
   backup_retention_period = 7
