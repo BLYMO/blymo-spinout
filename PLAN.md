@@ -52,17 +52,17 @@ This document tracks the development plan, our current progress, and the strateg
   - [x] Hardened Supabase RLS policies to allow authenticated user updates.
   - [x] Fixed Realtime subscription racing issues during React Strict Mode re-mounts.
 
-## Phase 5: Go-Live Checklist (Next Steps)
+## Phase 5: Go-Live Checklist - [COMPLETED]
 
-- [ ] **12. Final Control Plane Lockdown & Fixes**
-  - [ ] **Realtime Fix**: Enable `workspaces` in the `supabase_realtime` publication.
-  - [ ] **Email Fix**: Ensure `RESEND_API_KEY` is set in Supabase Secrets (`supabase secrets set`).
-  - [ ] Re-enable the JWT Authorizer in `apigateway.tf`.
-  - [ ] Add rate-limiting to the `$default` stage in API Gateway.
-- [ ] **13. Deployment & Launch**
-  - [ ] Deploy static frontend to Vercel/Netlify.
-  - [ ] Link production domain (`trybase.io`).
-  - [ ] Post to communities (Indie Hackers, Product Hunt, Reddit).
+- [x] **12. Final Control Plane Lockdown & Fixes**
+  - [x] **Realtime Fix**: Enable `workspaces` in the `supabase_realtime` publication.
+  - [x] **Email Fix**: Ensure `RESEND_API_KEY` is set in Supabase Secrets (`supabase secrets set`).
+  - [x] Re-enable the JWT Authorizer in `apigateway.tf`.
+  - [x] Add rate-limiting to the `$default` stage in API Gateway.
+- [x] **13. Deployment & Launch**
+  - [x] Deploy static frontend to Vercel/Netlify.
+  - [x] Link production domain (`trybase.io`).
+  - [x] Post to communities (Indie Hackers, Product Hunt, Reddit).
 
 ---
 

@@ -89,6 +89,7 @@ aws secretsmanager put-secret-value \
 **The Fix**:
 Manually push the new Docker image containing your Python updates, then force AWS Lambda to consume it:
 
+Account ID = 656876168893
 ```bash
 # 1. Login to ECR
 aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin <ACCOUNT_ID>.dkr.ecr.eu-west-2.amazonaws.com
