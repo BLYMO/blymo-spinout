@@ -45,8 +45,8 @@ resource "aws_lambda_function" "authorizer" {
   environment {
     variables = {
       # Public key coordinates for ES256 verification
-      SUPABASE_JWK_X = "jRwuD1S2cDatOVdbi3sileVxuwh_ZlIKqSl1vlgvCd8"
-      SUPABASE_JWK_Y = "qXpO7uPc1x-tuYUoF-DGddIi7gEOCc6IOa0l8ec_0TU"
+      SUPABASE_JWK_X = var.supabase_jwk_x
+      SUPABASE_JWK_Y = var.supabase_jwk_y
     }
   }
 }

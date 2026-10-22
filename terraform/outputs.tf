@@ -24,3 +24,18 @@ output "ecr_repository_url" {
   description = "The URL of the ECR repository for the create-schema Lambda."
   value       = aws_ecr_repository.create_schema_lambda.repository_url
 }
+
+output "api_gateway_invoke_url" {
+  description = "The base URL for invoking the control plane provisioning API."
+  value       = aws_apigatewayv2_stage.default.invoke_url
+}
+
+output "step_functions_state_machine_arn" {
+  description = "The ARN of the Step Function provisioning state machine."
+  value       = aws_sfn_state_machine.provision_tenant.arn
+}
+
+output "codebuild_project_name" {
+  description = "The CodeBuild project used to run Terraform tenant deployments."
+  value       = aws_codebuild_project.provision_tenant.name
+}

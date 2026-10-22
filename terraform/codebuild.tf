@@ -203,8 +203,8 @@ resource "aws_iam_role_policy" "codebuild_terraform_permissions" {
         Effect = "Allow",
         Action = ["s3:ListBucket", "s3:GetObject", "s3:PutObject", "s3:DeleteObject"]
         Resource = [
-          "arn:aws:s3:::n8n-hosting-saas-tfstate",
-          "arn:aws:s3:::n8n-hosting-saas-tfstate/tenants/*"
+          "arn:aws:s3:::${var.state_bucket_name}",
+          "arn:aws:s3:::${var.state_bucket_name}/*"
         ]
       }
     ]
@@ -245,7 +245,7 @@ resource "aws_codebuild_project" "provision_tenant" {
 
   source {
     type            = "GITHUB"
-    location        = "https://github.com/BLYMO/blymo-spinout.git"
+    location        = var.github_repo_url
     git_clone_depth = 1
     buildspec       = <<-BUILDSPEC
       version: 0.2
@@ -262,12 +262,12 @@ resource "aws_codebuild_project" "provision_tenant" {
             - echo "Provisioning tenant $TENANT_ID"
             - cd terraform
             # Pull existing tenants from S3 to ensure Terraform knows about the full fleet
-            - aws s3 sync s3://n8n-hosting-saas-tfstate/tenants/ . || echo "No existing tenants found."
+            - aws s3 sync s3://${var.state_bucket_name}/tenants/ . || echo "No existing tenants found."
             # Write a new tenant module file dynamically.
             # Using printf to avoid heredoc variable expansion issues in buildspec.
             - |
               DB_SCHEMA=$(echo "$TENANT_ID" | tr "-" "_")
-              printf 'resource "random_password" "key_%s" {\n  length = 32\n  special = false\n}\n\nresource "aws_secretsmanager_secret" "key_%s" {\n  name = "n8n-hosting/tenant/%s/encryption-key"\n  recovery_window_in_days = 0\n}\n\nresource "aws_secretsmanager_secret_version" "key_%s" {\n  secret_id = aws_secretsmanager_secret.key_%s.id\n  secret_string = random_password.key_%s.result\n}\n\nmodule "%s" {\n  source = "./modules/tenant"\n\n  tenant_id = "%s"\n  subdomain = "%s"\n  db_schema = "%s"\n\n  vpc_id                         = module.vpc.vpc_id\n  private_subnet_ids             = module.vpc.private_subnets\n  ecs_cluster_name               = aws_ecs_cluster.main.name\n  alb_listener_arn               = aws_lb_listener.https.arn\n  alb_security_group_id          = aws_security_group.alb.id\n  db_host                        = aws_db_instance.main.address\n  db_port                        = aws_db_instance.main.port\n  db_credentials_secret_arn      = aws_secretsmanager_secret.db_credentials.arn\n  vpc_endpoint_security_group_id = aws_security_group.vpc_endpoints.id\n  alb_listener_rule_priority     = %s\n\n  n8n_encryption_key_secret_arn = aws_secretsmanager_secret_version.key_%s.arn\n  smtp_api_key_secret_arn       = aws_secretsmanager_secret.smtp_api_key.arn\n}\n' \
+              printf 'resource "random_password" "key_%s" {\n  length = 32\n  special = false\n}\n\nresource "aws_secretsmanager_secret" "key_%s" {\n  name = "n8n-hosting/tenant/%s/encryption-key"\n  recovery_window_in_days = 0\n}\n\nresource "aws_secretsmanager_secret_version" "key_%s" {\n  secret_id = aws_secretsmanager_secret.key_%s.id\n  secret_string = random_password.key_%s.result\n}\n\nmodule "%s" {\n  source = "./modules/tenant"\n\n  tenant_id = "%s"\n  subdomain = "%s"\n  db_schema = "%s"\n  domain_name = var.base_domain\n\n  vpc_id                         = module.vpc.vpc_id\n  private_subnet_ids             = module.vpc.private_subnets\n  ecs_cluster_name               = aws_ecs_cluster.main.name\n  alb_listener_arn               = aws_lb_listener.https.arn\n  alb_security_group_id          = aws_security_group.alb.id\n  db_host                        = aws_db_instance.main.address\n  db_port                        = aws_db_instance.main.port\n  db_credentials_secret_arn      = aws_secretsmanager_secret.db_credentials.arn\n  vpc_endpoint_security_group_id = aws_security_group.vpc_endpoints.id\n  alb_listener_rule_priority     = %s\n\n  n8n_encryption_key_secret_arn = aws_secretsmanager_secret_version.key_%s.arn\n  smtp_api_key_secret_arn       = aws_secretsmanager_secret.smtp_api_key.arn\n}\n' \
                 "$TENANT_ID" "$TENANT_ID" "$TENANT_ID" "$TENANT_ID" "$TENANT_ID" "$TENANT_ID" \
                 "$TENANT_ID" "$TENANT_ID" "$TENANT_ID" "$DB_SCHEMA" "$ALB_LISTENER_RULE_PRIORITY" \
                 "$TENANT_ID" \
@@ -280,7 +280,7 @@ resource "aws_codebuild_project" "provision_tenant" {
         post_build:
           commands:
             # Persist the newly created tenant config back to S3
-            - aws s3 cp "tenant_$TENANT_ID.tf" "s3://n8n-hosting-saas-tfstate/tenants/tenant_$TENANT_ID.tf"
+            - aws s3 cp "tenant_$TENANT_ID.tf" "s3://${var.state_bucket_name}/tenants/tenant_$TENANT_ID.tf"
       BUILDSPEC
   }
 

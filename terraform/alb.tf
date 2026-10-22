@@ -76,10 +76,7 @@ resource "aws_lb_listener" "https" {
   protocol          = "HTTPS"
   ssl_policy        = "ELBSecurityPolicy-2016-08"
 
-  # IMPORTANT: You must create a certificate in AWS Certificate Manager (ACM)
-  # for your domain and paste the ARN here.
-  # For example: "arn:aws:acm:eu-west-2:123456789012:certificate/your-cert-id"
-  certificate_arn = "arn:aws:acm:eu-west-2:656876168893:certificate/cccdf28e-f81f-46cd-bff4-d17f9916fe5f" # <--- REAL ARN NOW INJECTED
+  certificate_arn = var.acm_certificate_arn
 
   # Default action for requests that don't match any tenant-specific rules.
   # We'll forward them to the default target group which will return a 404.

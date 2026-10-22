@@ -78,7 +78,7 @@ resource "aws_iam_role_policy" "sfn_events" {
           "events:DeleteRule",
           "events:RemoveTargets"
         ]
-        Resource = "arn:aws:events:eu-west-2:656876168893:rule/*"
+        Resource = "arn:aws:events:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:rule/*"
       }
     ]
   })

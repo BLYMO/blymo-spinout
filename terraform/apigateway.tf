@@ -48,13 +48,13 @@ resource "aws_apigatewayv2_api" "main" {
   protocol_type = "HTTP"
   description   = "Control plane API for n8n tenant provisioning"
 
-cors_configuration {
-  allow_origins     = ["http://localhost:5173", "https://trybase.io"]
-  allow_methods     = ["POST", "OPTIONS"]
-  allow_headers     = ["content-type", "authorization"]
-  allow_credentials = true
-  max_age           = 300
-}
+  cors_configuration {
+    allow_origins     = var.cors_allowed_origins
+    allow_methods     = ["POST", "OPTIONS"]
+    allow_headers     = ["content-type", "authorization"]
+    allow_credentials = true
+    max_age           = 300
+  }
 }
 
 resource "aws_apigatewayv2_stage" "default" {

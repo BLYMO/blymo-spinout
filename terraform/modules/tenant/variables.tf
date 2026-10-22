@@ -28,7 +28,13 @@ variable "alb_listener_arn" {
 variable "n8n_image" {
   description = "The n8n Docker image to deploy."
   type        = string
-  default     = "656876168893.dkr.ecr.eu-west-2.amazonaws.com/n8n-hosting/n8n-base:latest"
+  default     = "n8nio/n8n:latest"
+}
+
+variable "domain_name" {
+  description = "Base domain for tenant instances (e.g. n8n.trybase.io or n8n.yourdomain.com)"
+  type        = string
+  default     = "n8n.trybase.io"
 }
 
 variable "cpu" {

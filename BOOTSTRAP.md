@@ -1,6 +1,6 @@
 # Bootstrapping & Infrastructure Gotchas
 
-This document tracks the manual steps and "Chicken and Egg" problems encountered when setting up the NexScale/Blymo infrastructure from scratch.
+This document tracks the bootstrap steps and setup details when setting up the TryBase infrastructure from scratch.
 
 ## 1. The ECR / Lambda "Chicken and Egg"
 **Problem**: The `create_schema` Lambda function is defined as a container-based Lambda. AWS requires the Docker image to exist in ECR *before* the Lambda resource can be created. However, Terraform creates the ECR repository and the Lambda in the same `apply` cycle.
@@ -66,11 +66,11 @@ aws secretsmanager put-secret-value \
 **The Fix**:
 1. Get the secret string from AWS (If your JSON password contains `\u0026`, you **must** manually decode it to `&` when pasting!):
    ```bash
-   aws secretsmanager get-secret-value --secret-id "arn:aws:secretsmanager:eu-west-2:<ACCOUNT_ID>:secret:n8n-hosting/rds-master-credentials-..." --query SecretString --output text
+   aws secretsmanager get-secret-value --secret-id "arn:aws:secretsmanager:<REGION>:<ACCOUNT_ID>:secret:n8n-hosting/rds-master-credentials-..." --query SecretString --output text
    ```
 2. Connect to the Bastion host (Note: AL2 uses `ec2-user`, not `ubuntu`):
    ```bash
-   ssh -i opschimp.pem ec2-user@<BASTION_IP>
+   ssh -i <YOUR_KEY>.pem ec2-user@<BASTION_IP>
    ```
 3. Upgrade the PostgreSQL client on the Bastion (Amazon Linux 2 defaults to v9.2 which lacks modern SCRAM encryption):
    ```bash
@@ -89,22 +89,21 @@ aws secretsmanager put-secret-value \
 **The Fix**:
 Manually push the new Docker image containing your Python updates, then force AWS Lambda to consume it:
 
-Account ID = 656876168893
 ```bash
 # 1. Login to ECR
-aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin <ACCOUNT_ID>.dkr.ecr.eu-west-2.amazonaws.com
+aws ecr get-login-password --region <REGION> | docker login --username AWS --password-stdin <ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com
 
 # 2. Build for AWS architecture (Crucial: AWS Lambda is configured to use arm64 in our Terraform)
-docker build --platform linux/arm64 -t <ACCOUNT_ID>.dkr.ecr.eu-west-2.amazonaws.com/n8n-hosting/create-schema-lambda:latest ./lambda/create-schema
+docker build --platform linux/arm64 -t <ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/n8n-hosting/create-schema-lambda:latest ./lambda/create-schema
 
 # 3. Push to ECR
-docker push <ACCOUNT_ID>.dkr.ecr.eu-west-2.amazonaws.com/n8n-hosting/create-schema-lambda:latest
+docker push <ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/n8n-hosting/create-schema-lambda:latest
 
 # 4. Tell Lambda to use the new code immediately
 aws lambda update-function-code \
   --function-name n8n-tenant-create-schema \
-  --image-uri <ACCOUNT_ID>.dkr.ecr.eu-west-2.amazonaws.com/n8n-hosting/create-schema-lambda:latest \
-  --region eu-west-2
+  --image-uri <ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/n8n-hosting/create-schema-lambda:latest \
+  --region <REGION>
 ```
 
 ## 7. The Golden Rule: Sync Tenants Before Local Apply

@@ -20,16 +20,20 @@ terraform {
 }
 
 provider "aws" {
-  region = "eu-west-2" # You can change this to your preferred region
+  region = var.aws_region
 
   default_tags {
     tags = {
-      Project     = "n8n-hosting-saas"
+      Project     = var.project_name
       ManagedBy   = "Terraform"
-      Environment = "dev"
+      Environment = var.environment
     }
   }
 }
+
+# Account and Region helpers
+data "aws_caller_identity" "current" {}
+data "aws_region" "current" {}
 
 # ------------------------------------------------------------------------------
 # SHARED INFRASTRUCTURE

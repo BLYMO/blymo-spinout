@@ -25,7 +25,7 @@ resource "aws_security_group" "bastion" {
     protocol    = "tcp"
     from_port   = 22
     to_port     = 22
-    cidr_blocks = ["5.71.146.123/32"]
+    cidr_blocks = [var.bastion_allowed_cidr]
   }
 
   egress {
@@ -40,7 +40,7 @@ resource "aws_security_group" "bastion" {
 resource "aws_instance" "bastion" {
   ami           = data.aws_ami.amazon_linux_2.id
   instance_type = "t2.nano"
-  key_name      = "opschimp"
+  key_name      = var.bastion_key_name != "" ? var.bastion_key_name : null
 
   vpc_security_group_ids = [aws_security_group.bastion.id]
   subnet_id              = module.vpc.public_subnets[0]

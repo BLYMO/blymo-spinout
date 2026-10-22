@@ -1,6 +1,6 @@
-# NexScale Platform Architecture
+# TryBase Platform Architecture
 
-NexScale is a multi-tenant SaaS platform that provides isolated, production-grade n8n instances on AWS infrastructure, managed by a Supabase-powered control plane.
+TryBase is a multi-tenant SaaS and orchestration platform that provides isolated, production-grade n8n instances on AWS infrastructure, managed by a modern control plane.
 
 ## 1. High-Level Overview
 
@@ -30,7 +30,7 @@ graph TD
 
 ## 2. Component Breakdown
 
-### A. Frontend (NexScale Web)
+### A. Frontend (TryBase Web)
 - **Tech Stack**: Vite, React, Tailwind-style Vanilla CSS.
 - **Hosting**: AWS S3 Bucket + CloudFront Distribution.
 - **Features**: 

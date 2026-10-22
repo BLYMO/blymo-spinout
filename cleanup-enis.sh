@@ -4,7 +4,7 @@
 # Specifically targets ENIs created by VPC-enabled Lambdas that block destruction.
 
 SG_NAME="n8n-hosting-create-schema-lambda-sg"
-REGION="eu-west-2"
+REGION="${AWS_REGION:-eu-west-2}"
 
 echo "🔍 Searching for orphaned ENIs linked to $SG_NAME..."
 

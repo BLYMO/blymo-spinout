@@ -1,0 +1,41 @@
+# ==============================================================================
+# TryBase: Generic Container ("Hello World") Example
+#
+# This demonstrates running ANY arbitrary containerized service using TryBase's
+# shared infrastructure (VPC, private Fargate, ALB host-header routing).
+#
+# How to run:
+# 1. Copy this file:
+#      cp tenant_hello_world.tf.example tenant_hello.tf
+# 2. Deploy this service:
+#      terraform apply -target=module.hello_world
+# 3. Visit:
+#      https://hello.<your-base-domain> (e.g. https://hello.n8n.yourdomain.com)
+# ==============================================================================
+
+module "hello_world" {
+  source = "./modules/generic-workload"
+
+  service_name    = "hello-world"
+  subdomain       = "hello"
+  container_image = "nginxdemos/hello:plain-text"
+  container_port  = 80
+  health_check_path = "/"
+  cpu             = 256  # 0.25 vCPU
+  memory          = 512  # 512 MiB
+
+  # Pass any arbitrary environment variables
+  environment_variables = {
+    WELCOME_MESSAGE = "Hello from TryBase Generic Container!"
+    ENVIRONMENT     = "demo"
+  }
+
+  # Bind to TryBase shared infrastructure
+  vpc_id                     = module.vpc.vpc_id
+  private_subnet_ids         = module.vpc.private_subnets
+  ecs_cluster_name           = aws_ecs_cluster.main.name
+  alb_listener_arn           = aws_lb_listener.https.arn
+  alb_security_group_id      = aws_security_group.alb.id
+  alb_listener_rule_priority = 200
+  domain_name                = var.base_domain
+}

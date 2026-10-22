@@ -1,7 +1,10 @@
 # Terraform provider binaries and plugins (huge, never commit these)
 **/.terraform/
+# Terraform state files
 *.tfstate
-*.tfstate.backup
+*.tfstate.*
+**/*.tfstate
+**/*.tfstate.*
 *.tfplan
 
 # Crash log files
@@ -30,9 +33,17 @@ override.tf.json
 .vscode/
 
 # Lambda build artifacts
+*.zip
+**/*.zip
 lambda/create-schema.zip
-*.tfvars
 terraform/authorizer.zip
-terraform/tenant_neat-pipe-jumps.tf
-.gitignore
-terraform/tenant_neat-wolf-beans.tf
+terraform/notify_success.zip
+
+# Dynamic per-tenant terraform files (must never be committed)
+terraform/tenant_*.tf
+!terraform/tenant_*.tf.example
+
+# Local screenshots and adhoc notes
+*.png
+response.json
+terraform/response.json

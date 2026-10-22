@@ -1,0 +1,18 @@
+TryBase: Multi-Tenant n8n Cloud Orchestrator
+Copyright 2026 TryBase Authors & Contributors
+
+This product includes software developed at TryBase (https://trybase.io).
+
+================================================================================
+Third-Party Trademarks and Notices:
+================================================================================
+- n8n is a registered trademark of n8n GmbH.
+- TryBase is an independent open-source project and is not affiliated with,
+  endorsed by, or sponsored by n8n GmbH.
+- n8n software itself is distributed under the Fair-Code Sustainable Use License
+  (or other licenses depending on version). If you intend to offer n8n as a
+  commercial service to external third parties, please consult n8n GmbH's
+  licensing requirements at https://n8n.io/legal/sustainable-use-license.
+- Amazon Web Services, AWS, Fargate, ECS, RDS, and EventBridge are trademarks
+  of Amazon.com, Inc. or its affiliates.
+- Supabase is a trademark of Supabase, Inc.

@@ -74,11 +74,11 @@ resource "aws_ecs_task_definition" "n8n" {
         { name = "DB_POSTGRESDB_SSL_REJECT_UNAUTHORIZED", value = "false" }, # Allow AWS certificates that may not be in the internal Node.js trust store
 
         # --- n8n URL / Routing ---
-        { name = "N8N_HOST",             value = "${var.subdomain}.n8n.trybase.io" },
+        { name = "N8N_HOST",             value = "${var.subdomain}.${var.domain_name}" },
         { name = "N8N_PROTOCOL",         value = "https" },
         { name = "N8N_PORT",             value = "5678" },
-        { name = "WEBHOOK_URL",          value = "https://${var.subdomain}.n8n.trybase.io" },
-        { name = "N8N_EDITOR_BASE_URL",  value = "https://${var.subdomain}.n8n.trybase.io" },
+        { name = "WEBHOOK_URL",          value = "https://${var.subdomain}.${var.domain_name}" },
+        { name = "N8N_EDITOR_BASE_URL",  value = "https://${var.subdomain}.${var.domain_name}" },
 
         # --- Execution Limits (billing protection) ---
         { name = "EXECUTIONS_TIMEOUT",          value = "3600" },
@@ -94,7 +94,7 @@ resource "aws_ecs_task_definition" "n8n" {
         { name = "N8N_SMTP_PORT",        value = "465" },
         { name = "N8N_SMTP_SSL",         value = "true" },
         { name = "N8N_SMTP_USER",        value = "resend" },
-        { name = "N8N_SMTP_SENDER",      value = "noreply@n8n.trybase.io" },
+        { name = "N8N_SMTP_SENDER",      value = "noreply@${var.domain_name}" },
 
         # --- Privacy & UX ---
         { name = "N8N_DIAGNOSTICS_ENABLED",              value = "false" },
@@ -195,7 +195,7 @@ resource "aws_lb_listener_rule" "n8n" {
 
   condition {
     host_header {
-      values = ["${var.subdomain}.n8n.trybase.io"]
+      values = ["${var.subdomain}.${var.domain_name}"]
     }
   }
 }

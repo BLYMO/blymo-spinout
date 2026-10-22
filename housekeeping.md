@@ -1,6 +1,6 @@
 # Operational Housekeeping
 
-This document outlines manual maintenance tasks required for the NexScale platform during the early launch phase.
+This document outlines operational maintenance tasks for the TryBase platform.
 
 ## Manual Cleanup (Failed/Stuck Deployments)
 

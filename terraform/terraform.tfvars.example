@@ -1,0 +1,38 @@
+# ==============================================================================
+# TryBase: Example Terraform Variables
+# Copy this file to `terraform.tfvars` and customize with your own values:
+#   cp terraform.tfvars.example terraform.tfvars
+# ==============================================================================
+
+# AWS Region & Project Info
+aws_region   = "eu-west-2"
+project_name = "trybase"
+environment  = "prod"
+
+# Domain & SSL (ACM) Configuration
+# You must request a wildcard SSL certificate in AWS Certificate Manager for your domain
+# (e.g. *.n8n.yourdomain.com) in your target region before applying.
+base_domain         = "n8n.yourdomain.com"
+acm_certificate_arn = "arn:aws:acm:eu-west-2:123456789012:certificate/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
+# Terraform Remote State S3 Bucket
+state_bucket_name = "your-terraform-state-bucket"
+
+# GitHub Repo cloned by AWS CodeBuild to dynamically apply tenant configurations
+github_repo_url = "https://github.com/your-org/trybase.git"
+
+# Supabase Control Plane Integration (Optional if using your own auth)
+supabase_url   = "https://your-project.supabase.co"
+supabase_jwk_x = "YOUR_SUPABASE_JWK_X_COORDINATE"
+supabase_jwk_y = "YOUR_SUPABASE_JWK_Y_COORDINATE"
+
+# API Gateway CORS (Frontend URLs that can call /provision)
+cors_allowed_origins = [
+  "http://localhost:5173",
+  "https://app.yourdomain.com"
+]
+
+# Bastion Jump Box Configuration (Optional - for private RDS maintenance)
+enable_bastion       = true
+bastion_key_name     = "your-ec2-keypair-name"
+bastion_allowed_cidr = "YOUR_IP_ADDRESS/32"
