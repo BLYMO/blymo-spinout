@@ -38,12 +38,28 @@ if ! command -v terraform &> /dev/null; then
 fi
 echo -e "✅ Terraform found: ${CYAN}$(terraform version | head -n 1)${RESET}"
 
-# 3. Ensure terraform.tfvars exists
+# 3. Check Docker daemon (Required for Lambda image build and n8n mirroring)
+echo -e "${BOLD}Checking Docker daemon...${RESET}"
+if ! docker info >/dev/null 2>&1; then
+    echo -e "${RED}❌ Docker is not running or not installed.${RESET}"
+    echo -e "Docker is required to automatically build the create-schema Lambda container image."
+    echo -e "Please start Docker Desktop and run this script again.\n"
+    exit 1
+fi
+echo -e "✅ Docker is running."
+
+# 4. Ensure terraform.tfvars exists
 TFVARS="terraform/terraform.tfvars"
 if [ ! -f "$TFVARS" ]; then
     echo -e "\n${YELLOW}⚠️  No terraform.tfvars found. Creating from template...${RESET}"
     cp terraform/terraform.tfvars.example "$TFVARS"
     echo -e "Please review ${CYAN}$TFVARS${RESET} with your domain and ACM certificate ARN."
+fi
+
+# Auto-sanitize placeholder bastion key if enable_bastion is true
+if grep -q "your-ec2-keypair-name" "$TFVARS" 2>/dev/null && grep -q 'enable_bastion[[:space:]]*=[[:space:]]*true' "$TFVARS" 2>/dev/null; then
+    echo -e "${YELLOW}⚠️  Disabling placeholder bastion in $TFVARS (set to true only with a real AWS EC2 key pair).${RESET}"
+    sed -i.bak 's/enable_bastion[[:space:]]*=[[:space:]]*true/enable_bastion = false/g' "$TFVARS" && rm -f "$TFVARS.bak"
 fi
 
 # Check for placeholder certificate ARN

@@ -29,7 +29,7 @@ cors_allowed_origins = [
   "https://app.yourdomain.com"
 ]
 
-# Bastion Jump Box Configuration (Optional - for private RDS maintenance)
-enable_bastion       = true
-bastion_key_name     = "your-ec2-keypair-name"
-bastion_allowed_cidr = "YOUR_IP_ADDRESS/32"
+# Bastion Jump Box Configuration (Optional - set to true only if you need an SSH jump host for RDS)
+enable_bastion       = false
+bastion_key_name     = ""
+bastion_allowed_cidr = "0.0.0.0/0"

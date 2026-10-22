@@ -1,8 +1,8 @@
 # --- outputs.tf ---
 
 output "bastion_public_ip" {
-  description = "The public IP address of the bastion host."
-  value       = aws_instance.bastion.public_ip
+  description = "The public IP address of the bastion host (if enabled)."
+  value       = try(aws_instance.bastion[0].public_ip, null)
 }
 
 output "db_hostname" {

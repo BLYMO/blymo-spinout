@@ -79,6 +79,12 @@ resource "aws_lambda_function" "create_schema" {
     subnet_ids         = module.vpc.private_subnets
     security_group_ids = [aws_security_group.create_schema_lambda.id]
   }
+
+  depends_on = [
+    aws_iam_role_policy_attachment.lambda_vpc_access,
+    aws_iam_role_policy_attachment.lambda_read_db_secret,
+    null_resource.build_create_schema_lambda
+  ]
 }
 
 # ------------------------------------------------------------------------------

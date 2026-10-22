@@ -35,22 +35,6 @@ resource "aws_security_group" "rds" {
     cidr_blocks = [module.vpc.vpc_cidr_block]
   }
 
-  # Allow inbound Postgres traffic from the bastion host
-  ingress {
-    protocol        = "tcp"
-    from_port       = 5432
-    to_port         = 5432
-    security_groups = [aws_security_group.bastion.id]
-  }
-
-  # Allow inbound Postgres traffic from the bastion host
-  ingress {
-    protocol        = "tcp"
-    from_port       = 5432
-    to_port         = 5432
-    security_groups = [aws_security_group.bastion.id]
-  }
-
   # Allow inbound Postgres traffic from the create_schema Lambda
   ingress {
     protocol        = "tcp"
@@ -58,6 +42,17 @@ resource "aws_security_group" "rds" {
     to_port         = 5432
     security_groups = [aws_security_group.create_schema_lambda.id]
   }
+}
+
+# Allow inbound Postgres traffic from the bastion host if enabled
+resource "aws_security_group_rule" "rds_bastion_ingress" {
+  count                    = var.enable_bastion ? 1 : 0
+  type                     = "ingress"
+  from_port                = 5432
+  to_port                  = 5432
+  protocol                 = "tcp"
+  source_security_group_id = aws_security_group.bastion[0].id
+  security_group_id        = aws_security_group.rds.id
 }
 
 # A subnet group for RDS, which tells it which subnets it can be placed in.

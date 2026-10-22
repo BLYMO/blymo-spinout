@@ -9,6 +9,26 @@ resource "aws_ecr_repository" "create_schema_lambda" {
   }
 }
 
+# Automatically build and push the create-schema Lambda container image
+resource "null_resource" "build_create_schema_lambda" {
+  triggers = {
+    dockerfile_sha   = filesha256("${path.module}/../lambda/create-schema/Dockerfile")
+    handler_sha      = filesha256("${path.module}/../lambda/create-schema/main.py")
+    requirements_sha = filesha256("${path.module}/../lambda/create-schema/requirements.txt")
+  }
+
+  provisioner "local-exec" {
+    command = <<EOF
+      REGISTRY_URL=$(echo "${aws_ecr_repository.create_schema_lambda.repository_url}" | cut -d'/' -f1)
+      aws ecr get-login-password --region ${data.aws_region.current.name} | docker login --username AWS --password-stdin $REGISTRY_URL
+      docker build --platform linux/arm64 -t ${aws_ecr_repository.create_schema_lambda.repository_url}:latest ${path.module}/../lambda/create-schema
+      docker push ${aws_ecr_repository.create_schema_lambda.repository_url}:latest
+EOF
+  }
+
+  depends_on = [aws_ecr_repository.create_schema_lambda]
+}
+
 # ECR repository to mirror the n8n base image (bye-bye Docker Hub rate limits!)
 resource "aws_ecr_repository" "n8n_base" {
   name                 = "n8n-hosting/n8n-base"

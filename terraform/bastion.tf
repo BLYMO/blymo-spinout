@@ -16,6 +16,7 @@ data "aws_ami" "amazon_linux_2" {
 
 # Security group for the bastion host
 resource "aws_security_group" "bastion" {
+  count       = var.enable_bastion ? 1 : 0
   name        = "n8n-hosting-bastion-sg"
   description = "Allow SSH access from a specific IP"
   vpc_id      = module.vpc.vpc_id
@@ -38,12 +39,13 @@ resource "aws_security_group" "bastion" {
 
 # EC2 instance for the bastion host
 resource "aws_instance" "bastion" {
+  count         = var.enable_bastion ? 1 : 0
   ami           = data.aws_ami.amazon_linux_2.id
   instance_type = "t2.nano"
   key_name      = var.bastion_key_name != "" ? var.bastion_key_name : null
 
-  vpc_security_group_ids = [aws_security_group.bastion.id]
-  subnet_id              = module.vpc.public_subnets[0]
+  vpc_security_group_ids      = [aws_security_group.bastion[0].id]
+  subnet_id                   = module.vpc.public_subnets[0]
   associate_public_ip_address = true
 
   # User data script to install the postgresql client on boot

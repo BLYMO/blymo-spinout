@@ -2,24 +2,23 @@
 
 This document tracks the bootstrap steps and setup details when setting up the TryBase infrastructure from scratch.
 
-## 1. The ECR / Lambda "Chicken and Egg"
-**Problem**: The `create_schema` Lambda function is defined as a container-based Lambda. AWS requires the Docker image to exist in ECR *before* the Lambda resource can be created. However, Terraform creates the ECR repository and the Lambda in the same `apply` cycle.
+## 1. Automated ECR / Lambda Container Image Build
+**Background**: The `create_schema` Lambda function is container-based and AWS requires the image to exist in ECR before the Lambda can be created. 
 
-**The Fix**: 
-1. Run `terraform apply` until it fails at the Lambda creation step (the ECR repo will have been created by then).
-2. Manually build and push the base image once:
-   ```bash
-   # Login
-   aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin <ACCOUNT_ID>.dkr.ecr.eu-west-2.amazonaws.com
-   
-   # Build
-   docker build -t n8n-hosting/create-schema-lambda ./lambda/create-schema
-   
-   # Tag & Push
-   docker tag n8n-hosting/create-schema-lambda:latest <ACCOUNT_ID>.dkr.ecr.eu-west-2.amazonaws.com/n8n-hosting/create-schema-lambda:latest
-   docker push <ACCOUNT_ID>.dkr.ecr.eu-west-2.amazonaws.com/n8n-hosting/create-schema-lambda:latest
-   ```
-3. Re-run `terraform apply`.
+**Automated Solution**:
+Terraform now automatically builds and pushes the image on first `apply` via `null_resource.build_create_schema_lambda` (wired directly into `aws_lambda_function.create_schema`'s `depends_on`). Ensure Docker Desktop is running when applying.
+
+If you ever need to manually force a rebuild and push:
+```bash
+# 1. Login to ECR
+aws ecr get-login-password --region <REGION> | docker login --username AWS --password-stdin <ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com
+
+# 2. Build for ARM64 Lambda
+docker build --platform linux/arm64 -t <ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/n8n-hosting/create-schema-lambda:latest ./lambda/create-schema
+
+# 3. Push to ECR
+docker push <ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/n8n-hosting/create-schema-lambda:latest
+```
 
 ## 2. Inconsistent Dependency Locks
 **Problem**: When adding new Terraform providers (like the `archive` provider used for zipping Lambda code), the `terraform.lock.hcl` file becomes inconsistent.
