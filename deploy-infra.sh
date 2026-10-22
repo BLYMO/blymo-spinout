@@ -81,6 +81,7 @@ terraform apply -auto-approve
 # 5. Extract Outputs
 ALB_DNS=$(terraform output -raw alb_dns_name 2>/dev/null || echo "Pending")
 API_URL=$(terraform output -raw api_gateway_invoke_url 2>/dev/null || echo "Pending")
+API_URL="${API_URL%/}"
 SFN_ARN=$(terraform output -raw step_functions_state_machine_arn 2>/dev/null || echo "Pending")
 
 echo -e "\n=================================================================="
