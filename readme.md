@@ -67,7 +67,8 @@ graph TD
         
         SFN -->|1. Create DB Schema| L1[Lambda: Create Schema]
         SFN -->|2. Generate & Apply Terraform| CB[AWS CodeBuild]
-        CB -->|3. Register Tenant| S3[(S3 Tenant State Registry)]
+        CB -->|Lock & Consistency Check| DDB[(AWS DynamoDB Lock Table)]
+        CB -->|Pull Source & Sync Tenants| S3[(S3 State & Tenant Registry)]
         SFN -->|4. Callback Ping| L2[Lambda: Notify Success]
     end
 ```
@@ -87,7 +88,8 @@ n8n uses `N8N_ENCRYPTION_KEY` to encrypt API keys and credentials in its databas
 ### 5. Serverless Provisioning Pipeline
 - **API Gateway**: REST endpoint with custom ES256 JWT authorizer for Supabase / custom auth tokens.
 - **Step Functions**: 4-step state machine orchestrating schema generation, dynamic CodeBuild Terraform application, and callback notification.
-- **S3 Tenant Registry**: CodeBuild automatically syncs `tenant_<slug>.tf` configurations to S3, ensuring full state reconciliation across deployments.
+- **S3 State & Tenant Registry**: CodeBuild automatically syncs `tenant_<slug>.tf` configurations, stores the Terraform remote state (`shared/terraform.tfstate`), and pulls the infrastructure source archive (`source/infra.zip`).
+- **DynamoDB State Lock Table**: Manages distributed state locks and MD5 cryptographic integrity for Terraform (`n8n-hosting-saas-tf-locks`). Prevents race conditions and state corruption when multiple tenants are provisioned concurrently by CodeBuild or when local administrators run Terraform.
 
 ---
 
@@ -102,6 +104,7 @@ TryBase is designed to be lean. Below is an estimated real-world AWS cost breakd
 | **Application Load Balancer** | 1 ALB with SSL termination | ~$18.00–$22.00 |
 | **VPC Endpoints & Networking** | S3 Gateway + Secrets Manager Endpoints | ~$15.00–$25.00 |
 | **API Gateway & Step Functions** | Serverless (Pay-per-request) | < $1.00 |
+| **DynamoDB (State Locking)** | On-Demand (`PAY_PER_REQUEST`, state locks only) | $0.00 |
 | **Total Base Cost** | **Shared Cluster Foundation** | **~$50–$65 / month** |
 
 ### Per-Tenant Cost (Variable)

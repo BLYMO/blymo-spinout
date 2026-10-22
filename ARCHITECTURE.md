@@ -21,6 +21,8 @@ graph TD
     SFN -->|DB Setup| LambdaDB[RDS Schema Lambda]
     SFN -->|Success Ping| LambdaNotify[Callback Lambda]
     
+    CB -->|State Locking| DDB[(AWS DynamoDB Locks)]
+    CB -->|Pull Source & Sync Tenants| S3[(AWS S3 State & Registry)]
     CB -->|Deploy| ECS[AWS ECS Fargate]
     LambdaNotify -->|Notify| EdgeFunc[Supabase Edge Function]
     EdgeFunc -->|Realtime Update| Frontend
@@ -54,6 +56,7 @@ graph TD
     3. **Task 3 (Lambda)**: Pings the Supabase Edge Function to mark the workspace as `active`.
 - **ECS Fargate**: Hosts the n8n containers. Each tenant gets a dedicated task with isolated CPU/RAM.
 - **ALB (Application Load Balancer)**: Uses Host-based routing (e.g., `tenant-a.n8n.trybase.io`) to forward traffic to the correct ECS service.
+- **S3 & DynamoDB Backend**: S3 hosts the Terraform remote state (`shared/terraform.tfstate`), source archive (`source/infra.zip`), and tenant configurations. DynamoDB (`n8n-hosting-saas-tf-locks`) provides distributed locking and checksum verification to guarantee concurrency safety across parallel CodeBuild runs and local deployments.
 
 ### D. External Services
 - **Stripe**: Handles the subscription lifecycle (Starter/Pro/Business).
