@@ -193,7 +193,7 @@ curl -X POST "https://<API_GATEWAY_URL>/provision" \
 **What happens behind the scenes:**
 1. API Gateway validates the JWT with the ES256 Lambda Authorizer.
 2. Step Functions triggers the `n8n-tenant-create-schema` Lambda to create Postgres schema `acme_corp`.
-3. CodeBuild clones the repo, generates `tenant_acme-corp.tf`, and runs `terraform apply -target=module.acme_corp`.
+3. CodeBuild pulls the Terraform source archive from S3, generates `tenant_acme-corp.tf`, and runs `terraform apply -target=module.acme_corp`.
 4. The ALB automatically begins routing `https://acme.n8n.yourdomain.com` to the new Fargate container.
 
 ---

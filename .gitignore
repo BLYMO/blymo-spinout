@@ -31,6 +31,7 @@ override.tf.json
 # IDE
 .idea/
 .vscode/
+*.code-workspace
 
 # Lambda build artifacts
 *.zip

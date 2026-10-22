@@ -18,9 +18,6 @@ acm_certificate_arn = "arn:aws:acm:eu-west-2:123456789012:certificate/xxxxxxxx-x
 # Terraform Remote State S3 Bucket
 state_bucket_name = "your-terraform-state-bucket"
 
-# GitHub Repo cloned by AWS CodeBuild to dynamically apply tenant configurations
-github_repo_url = "https://github.com/your-org/trybase.git"
-
 # Supabase Control Plane Integration (Optional if using your own auth)
 supabase_url   = "https://your-project.supabase.co"
 supabase_jwk_x = "YOUR_SUPABASE_JWK_X_COORDINATE"

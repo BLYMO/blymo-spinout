@@ -63,12 +63,6 @@ variable "cors_allowed_origins" {
   default     = ["http://localhost:5173", "https://trybase.io"]
 }
 
-variable "github_repo_url" {
-  description = "GitHub repository URL used by CodeBuild to clone for tenant provisioning"
-  type        = string
-  default     = "https://github.com/trybase/trybase.git"
-}
-
 # --- Bastion Host Options ---
 
 variable "enable_bastion" {

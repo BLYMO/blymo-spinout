@@ -182,16 +182,7 @@ resource "aws_iam_role_policy" "codebuild_terraform_permissions" {
           "secretsmanager:TagResource",
           "secretsmanager:UntagResource",
           "secretsmanager:RestoreSecret",
-          # CodeConnections (GitHub OAuth)
-          "codestar-connections:UseConnection",
-          "codestar-connections:GetConnection",
-          "codestar-connections:GetConnectionToken",
-          "codestar-connections:PassConnection",
-          "codeconnections:UseConnection",
-          "codeconnections:GetConnection",
-          "codeconnections:GetConnectionToken",
-          "codeconnections:PassConnection",
-          # S3 (Tenant Registry Persistence)
+          # S3 (Tenant Registry Persistence & Source Archive)
           "s3:ListBucket",
           "s3:GetObject",
           "s3:PutObject",
@@ -209,6 +200,31 @@ resource "aws_iam_role_policy" "codebuild_terraform_permissions" {
       }
     ]
   })
+}
+
+# ------------------------------------------------------------------------------
+# Package and Upload Terraform Source to S3 for CodeBuild
+# ------------------------------------------------------------------------------
+
+data "archive_file" "codebuild_source" {
+  type        = "zip"
+  source_dir  = path.module
+  output_path = "${path.module}/codebuild_source.zip"
+  excludes = [
+    ".terraform",
+    ".terraform.lock.hcl",
+    "*.zip",
+    "*.tfstate",
+    "*.tfstate.*",
+    "terraform.tfvars"
+  ]
+}
+
+resource "aws_s3_object" "codebuild_source" {
+  bucket = var.state_bucket_name
+  key    = "source/infra.zip"
+  source = data.archive_file.codebuild_source.output_path
+  etag   = data.archive_file.codebuild_source.output_md5
 }
 
 # ------------------------------------------------------------------------------
@@ -244,10 +260,9 @@ resource "aws_codebuild_project" "provision_tenant" {
   }
 
   source {
-    type            = "GITHUB"
-    location        = var.github_repo_url
-    git_clone_depth = 1
-    buildspec       = <<-BUILDSPEC
+    type     = "S3"
+    location = "${var.state_bucket_name}/source/infra.zip"
+    buildspec = <<-BUILDSPEC
       version: 0.2
       phases:
         install:
@@ -260,7 +275,6 @@ resource "aws_codebuild_project" "provision_tenant" {
         pre_build:
           commands:
             - echo "Provisioning tenant $TENANT_ID"
-            - cd terraform
             # Pull existing tenants from S3 to ensure Terraform knows about the full fleet
             - aws s3 sync s3://${var.state_bucket_name}/tenants/ . || echo "No existing tenants found."
             # Write a new tenant module file dynamically.
@@ -283,6 +297,9 @@ resource "aws_codebuild_project" "provision_tenant" {
             - aws s3 cp "tenant_$TENANT_ID.tf" "s3://${var.state_bucket_name}/tenants/tenant_$TENANT_ID.tf"
       BUILDSPEC
   }
+
+  depends_on = [aws_s3_object.codebuild_source]
+
 
   logs_config {
     cloudwatch_logs {
