@@ -1,9 +1,133 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Server, Shield, Zap, Terminal, Code, Database, ArrowRight, Check, Timer, Loader2, Menu, X, Star, Bot, Cpu, Sparkles, Cloud, Lock } from 'lucide-react';
+import { 
+  Server, Shield, Zap, Terminal, Code, Database, ArrowRight, Check, Timer, 
+  Loader2, Menu, X, Star, Bot, Cpu, Sparkles, Cloud, Lock, Copy, CheckCircle2, 
+  AlertTriangle, Layers 
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 import '../index.css';
 import { supabase } from '../lib/supabaseClient';
 import { redirectToCheckout } from '../lib/billing';
+
+const CODE_SNIPPETS = {
+  python: {
+    filename: 'agent.py',
+    lang: 'Python (boto3 + FastAPI)',
+    code: `import os, json, boto3
+from fastapi import FastAPI, HTTPException
+
+app = FastAPI(title="TryBase AI Agent")
+
+# ZERO API KEYS REQUIRED!
+# Boto3 automatically retrieves temporary STS credentials from AWS Fargate's
+# link-local endpoint (169.254.170.2) using the container's dedicated Task Role.
+bedrock = boto3.client("bedrock-runtime", region_name="eu-west-2")
+
+@app.post("/chat")
+def chat(prompt: str):
+    try:
+        # Keyless invocation of Claude 3.5 Sonnet on Amazon Bedrock
+        body = json.dumps({
+            "anthropic_version": "bedrock-2023-05-31",
+            "max_tokens": 1024,
+            "messages": [{"role": "user", "content": prompt}]
+        })
+        
+        response = bedrock.invoke_model(
+            modelId="anthropic.claude-3-5-sonnet-20240620-v1:0",
+            body=body
+        )
+        data = json.loads(response["body"].read())
+        return {"reply": data["content"][0]["text"]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))`
+  },
+  typescript: {
+    filename: 'agent.ts',
+    lang: 'TypeScript (@aws-sdk)',
+    code: `import express from "express";
+import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
+
+const app = express();
+app.use(express.json());
+
+// Zero static AWS credentials in code or .env!
+// The AWS SDK automatically requests 60-minute ephemeral STS tokens
+// and silently refreshes them in-memory before expiration.
+const bedrock = new BedrockRuntimeClient({ region: "eu-west-2" });
+
+app.post("/chat", async (req, res) => {
+  const payload = {
+    anthropic_version: "bedrock-2023-05-31",
+    max_tokens: 1024,
+    messages: [{ role: "user", content: req.body.prompt }]
+  };
+
+  const command = new InvokeModelCommand({
+    modelId: "anthropic.claude-3-5-sonnet-20240620-v1:0",
+    contentType: "application/json",
+    body: JSON.stringify(payload)
+  });
+
+  const response = await bedrock.send(command);
+  const result = JSON.parse(new TextDecoder().decode(response.body));
+  res.json({ reply: result.content[0].text });
+});
+
+app.listen(8080, () => console.log("AI Agent running on port 8080"));`
+  },
+  docker: {
+    filename: 'Dockerfile',
+    lang: 'Dockerfile (Graviton ARM64)',
+    code: `# Lean Graviton-optimized container (Zero secrets baked into image layers)
+FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \\
+    libpq-dev gcc && \\
+    rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+# Expose internal port for Application Load Balancer
+EXPOSE 8080
+
+# Run without root privileges
+USER 10001
+CMD ["uvicorn", "agent:app", "--host", "0.0.0.0", "--port", "8080"]`
+  },
+  terraform: {
+    filename: 'main.tf',
+    lang: 'Terraform Module',
+    code: `module "customer_agent" {
+  source = "github.com/rgayan12/trybase//terraform/modules/generic-workload"
+
+  service_name    = "support-agent"
+  subdomain       = "support"
+  container_image = "ghcr.io/my-org/support-agent:latest"
+  container_port  = 8080
+  
+  # Attaches dedicated IAM Task Role with keyless Bedrock permissions
+  enable_bedrock  = true
+
+  environment_variables = {
+    AWS_DEFAULT_REGION = "eu-west-2"
+    # Zero API keys needed! AWS STS vends temporary tokens automatically.
+  }
+
+  vpc_id                     = module.vpc.vpc_id
+  private_subnet_ids         = module.vpc.private_subnets
+  ecs_cluster_name           = aws_ecs_cluster.main.name
+  alb_listener_arn           = aws_lb_listener.https.arn
+  alb_security_group_id      = aws_security_group.alb.id
+  alb_listener_rule_priority = 100
+}`
+  }
+};
 
 export default function Home() {
   const [mode, setMode] = useState('gui'); // 'gui' or 'cli'
@@ -23,6 +147,16 @@ export default function Home() {
   // Waitlist State
   const [waitlistEmail, setWaitlistEmail] = useState('');
   const [waitlistStatus, setWaitlistStatus] = useState('idle'); // 'idle' | 'loading' | 'success'
+
+  // Code Tab State
+  const [codeTab, setCodeTab] = useState('python'); // 'python' | 'typescript' | 'docker' | 'terraform'
+  const [copiedSnippet, setCopiedSnippet] = useState(false);
+
+  const handleCopySnippet = (text) => {
+    navigator.clipboard?.writeText(text);
+    setCopiedSnippet(true);
+    setTimeout(() => setCopiedSnippet(false), 2000);
+  };
 
   const handleJoinWaitlist = async (e) => {
     e.preventDefault();
@@ -431,6 +565,186 @@ export default function Home() {
                 Forecast exact cloud infrastructure bills before deploying. Run <code>make cost</code> to preview monthly AWS fleet expenses itemized down to the cent.
               </p>
             </div>
+          </div>
+        </section>
+
+        {/* Keyless Bedrock Agent & Zero-Trust Architecture Section */}
+        <section id="keyless-architecture" style={{ padding: '6rem 0', background: 'linear-gradient(180deg, transparent 0%, rgba(16, 185, 129, 0.03) 50%, transparent 100%)' }}>
+          <div className="container">
+            <div className="section-header" style={{ textAlign: 'center', marginBottom: '3.5rem' }}>
+              <span className="badge" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '0.35rem 0.85rem', fontSize: '0.8rem', borderRadius: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Zero-Trust Architecture
+              </span>
+              <h2 style={{ fontSize: '2.5rem', marginTop: '1rem', marginBottom: '0.75rem' }}>
+                Write AI Agents Without API Keys.
+              </h2>
+              <p className="text-secondary" style={{ maxWidth: '720px', margin: '0 auto', fontSize: '1.1rem', lineHeight: 1.6 }}>
+                Recent industry breaches proved that storing static API keys in environment variables is a major security liability. TryBase replaces static keys with ephemeral AWS STS tokens rotated automatically every 60 minutes.
+              </p>
+            </div>
+
+            {/* Architecture Comparison: Vulnerable vs TryBase */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', marginBottom: '3.5rem' }}>
+              
+              {/* Vulnerable Approach Card */}
+              <div className="glass-card" style={{ padding: '2rem', borderLeft: '4px solid #f43f5e', background: 'rgba(244, 63, 94, 0.03)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#f43f5e', fontWeight: 600 }}>
+                    <AlertTriangle size={20} />
+                    <span style={{ fontSize: '1.1rem' }}>The Fragile Way (Status Quo)</span>
+                  </div>
+                  <span className="badge" style={{ background: 'rgba(244, 63, 94, 0.15)', color: '#f43f5e', fontSize: '0.7rem' }}>
+                    HIGH RISK
+                  </span>
+                </div>
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.85rem', fontSize: '0.92rem', color: 'var(--text-secondary)' }}>
+                  <li style={{ display: 'flex', gap: '0.65rem' }}>
+                    <span style={{ color: '#f43f5e', fontWeight: 'bold' }}>✕</span>
+                    <span><strong>Static Credentials</strong>: Permanent <code>OPENAI_API_KEY</code> or <code>AKIA...</code> keys baked into <code>.env</code> files or databases.</span>
+                  </li>
+                  <li style={{ display: 'flex', gap: '0.65rem' }}>
+                    <span style={{ color: '#f43f5e', fontWeight: 'bold' }}>✕</span>
+                    <span><strong>Supply Chain Leaks</strong>: Package compromises and credential stealers dump environment variables to external servers.</span>
+                  </li>
+                  <li style={{ display: 'flex', gap: '0.65rem' }}>
+                    <span style={{ color: '#f43f5e', fontWeight: 'bold' }}>✕</span>
+                    <span><strong>Shared Blast Radius</strong>: All tenants share root API credentials; a single compromise breaches the entire fleet.</span>
+                  </li>
+                  <li style={{ display: 'flex', gap: '0.65rem' }}>
+                    <span style={{ color: '#f43f5e', fontWeight: 'bold' }}>✕</span>
+                    <span><strong>Public Attack Surface</strong>: Containers run with public IPv4 addresses vulnerable to automated internet scanners.</span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* TryBase Hyperscaler Approach Card */}
+              <div className="glass-card" style={{ padding: '2rem', borderLeft: '4px solid #10b981', background: 'rgba(16, 185, 129, 0.04)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#34d399', fontWeight: 600 }}>
+                    <Shield size={20} />
+                    <span style={{ fontSize: '1.1rem' }}>The TryBase Way (Hyperscaler STS)</span>
+                  </div>
+                  <span className="badge" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', fontSize: '0.7rem' }}>
+                    BATTLE-TESTED
+                  </span>
+                </div>
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.85rem', fontSize: '0.92rem', color: 'var(--text-secondary)' }}>
+                  <li style={{ display: 'flex', gap: '0.65rem' }}>
+                    <span style={{ color: '#34d399', fontWeight: 'bold' }}>✓</span>
+                    <span><strong>Zero Secret Footprint</strong>: Zero API keys in container definitions, <code>.env</code> files, or databases.</span>
+                  </li>
+                  <li style={{ display: 'flex', gap: '0.65rem' }}>
+                    <span style={{ color: '#34d399', fontWeight: 'bold' }}>✓</span>
+                    <span><strong>Ephemeral STS Tokens</strong>: Injected via link-local metadata (<code>169.254.170.2</code>) and silently rotated every 60 minutes.</span>
+                  </li>
+                  <li style={{ display: 'flex', gap: '0.65rem' }}>
+                    <span style={{ color: '#34d399', fontWeight: 'bold' }}>✓</span>
+                    <span><strong>Per-Tenant IAM Isolation</strong>: Every agent gets a dedicated Task Role; Tenant A physically cannot call Tenant B's models.</span>
+                  </li>
+                  <li style={{ display: 'flex', gap: '0.65rem' }}>
+                    <span style={{ color: '#34d399', fontWeight: 'bold' }}>✓</span>
+                    <span><strong>100% Private VPC</strong>: 0 Public IPs. Containers run in private AWS subnets behind an Application Load Balancer.</span>
+                  </li>
+                </ul>
+              </div>
+
+            </div>
+
+            {/* Interactive Code Container Recipes */}
+            <div className="glass-card" style={{ padding: '0', overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
+              
+              {/* Tab Header Bar */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '0.85rem 1.5rem',
+                background: 'rgba(255, 255, 255, 0.03)',
+                borderBottom: '1px solid var(--border-subtle)',
+                flexWrap: 'wrap',
+                gap: '1rem'
+              }}>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  {Object.entries(CODE_SNIPPETS).map(([key, item]) => (
+                    <button
+                      key={key}
+                      onClick={() => setCodeTab(key)}
+                      style={{
+                        padding: '0.45rem 0.85rem',
+                        borderRadius: '6px',
+                        border: 'none',
+                        background: codeTab === key ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
+                        color: codeTab === key ? 'var(--accent-blue)' : 'var(--text-secondary)',
+                        fontSize: '0.85rem',
+                        fontWeight: codeTab === key ? 600 : 400,
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      {item.lang}
+                    </button>
+                  ))}
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <span style={{ fontFamily: 'monospace', fontSize: '0.82rem', color: 'rgba(255,255,255,0.4)' }}>
+                    {CODE_SNIPPETS[codeTab].filename}
+                  </span>
+                  <button
+                    onClick={() => handleCopySnippet(CODE_SNIPPETS[codeTab].code)}
+                    className="btn btn-secondary"
+                    style={{ padding: '0.4rem 0.75rem', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+                  >
+                    {copiedSnippet ? <Check size={14} color="#34d399" /> : <Copy size={14} />}
+                    {copiedSnippet ? 'Copied!' : 'Copy Code'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Code Display Area */}
+              <div style={{
+                padding: '1.75rem',
+                background: '#070a14',
+                overflowX: 'auto',
+                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                fontSize: '0.88rem',
+                lineHeight: 1.7,
+                color: '#e2e8f0'
+              }}>
+                <pre style={{ margin: 0 }}>
+                  <code>{CODE_SNIPPETS[codeTab].code}</code>
+                </pre>
+              </div>
+
+              {/* Sub-bar explaining the magic */}
+              <div style={{
+                padding: '1.25rem 1.75rem',
+                background: 'rgba(16, 185, 129, 0.05)',
+                borderTop: '1px solid rgba(16, 185, 129, 0.15)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '1rem'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <Sparkles size={18} color="#34d399" />
+                  <span style={{ fontSize: '0.9rem', color: '#e2e8f0' }}>
+                    <strong>How it works:</strong> The AWS SDK queries the link-local metadata agent (<code>169.254.170.2</code>). STS returns short-lived credentials that auto-rotate silently.
+                  </span>
+                </div>
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  <span className="badge" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', fontSize: '0.75rem' }}>
+                    Zero Hardcoded Secrets
+                  </span>
+                  <span className="badge" style={{ background: 'rgba(59, 130, 246, 0.15)', color: 'var(--accent-blue)', fontSize: '0.75rem' }}>
+                    Bedrock Guardrails Ready
+                  </span>
+                </div>
+              </div>
+
+            </div>
+
           </div>
         </section>
 

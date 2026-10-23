@@ -268,9 +268,9 @@ If you prefer managing tenants statically in Git without the API:
 
 TryBase is **100% container-agnostic**. While we provide pre-configured templates for common engines like Dify and n8n, the core superpower is the **Generic Container Module** (`modules/generic-workload`):
 
-> **Bring any Docker container** — your custom Python CrewAI agent, AutoGen bot, LangChain pipeline, FastAPI microservice, or open-source tool — and TryBase gives it dedicated microVM compute, dynamic wildcard SSL subdomains, and native vector memory in seconds.
+> **Bring any Docker container** — your custom Python CrewAI agent, AutoGen bot, LangChain pipeline, FastAPI microservice, or open-source tool — and TryBase gives it dedicated microVM compute, dynamic wildcard SSL subdomains, keyless Bedrock IAM, and native vector memory in seconds.
 
-### Example: Deploying a Custom Python AI Agent (CrewAI / AutoGen / LangChain)
+### Example: Deploying a Custom Python AI Agent (Keyless Bedrock + pgvector)
 
 ```hcl
 module "finance_agent" {
@@ -282,10 +282,14 @@ module "finance_agent" {
   container_port    = 8000
   health_check_path = "/health"
 
+  # Attach dedicated per-tenant IAM Task Role with keyless Bedrock access
+  enable_bedrock    = true
+
   environment_variables = {
-    OPENAI_API_KEY = "sk-..."
-    DATABASE_URL   = "postgresql://user:pass@${aws_db_instance.rds.endpoint}/postgres?sslmode=require"
-    AGENT_ENV      = "production"
+    AWS_DEFAULT_REGION = "eu-west-2"
+    DATABASE_URL       = "postgresql://user:pass@${aws_db_instance.rds.endpoint}/postgres?sslmode=require"
+    AGENT_ENV          = "production"
+    # ZERO API KEYS NEEDED! Boto3 automatically retrieves 60m STS tokens from link-local Fargate metadata
   }
 
   # Bind to TryBase shared infrastructure
@@ -299,6 +303,48 @@ module "finance_agent" {
 }
 ```
 
+### 🛡️ How to Write a Keyless Bedrock Agent Container
+
+Unlike traditional hosting platforms that require storing raw `OPENAI_API_KEY` or `AWS_SECRET_ACCESS_KEY` in environment variables (which get stolen during supply chain compromises or container breaches), TryBase containers authenticate **keylessly**:
+
+```python
+# agent.py - Zero hardcoded API keys
+import json, boto3
+from fastapi import FastAPI
+
+app = FastAPI(title="Bedrock Financial Agent")
+
+# ZERO CREDENTIALS PASSED:
+# Boto3 queries the ECS link-local metadata agent (http://169.254.170.2).
+# AWS STS vends a 60-minute ephemeral session token and silently rotates it in memory.
+bedrock = boto3.client("bedrock-runtime", region_name="eu-west-2")
+
+@app.post("/chat")
+def chat(prompt: str):
+    body = json.dumps({
+        "anthropic_version": "bedrock-2023-05-31",
+        "max_tokens": 1024,
+        "messages": [{"role": "user", "content": prompt}]
+    })
+    
+    # Invokes Claude 3.5 Sonnet under this tenant's dedicated IAM Task Role
+    response = bedrock.invoke_model(
+        modelId="anthropic.claude-3-5-sonnet-20240620-v1:0",
+        body=body
+    )
+    result = json.loads(response["body"].read())
+    return {"reply": result["content"][0]["text"]}
+```
+
+### Architecture Comparison: Status Quo vs. TryBase
+
+| Architectural Vector | Fragile Status Quo (PaaS / DIY) | The TryBase Hyperscaler Standard |
+| :--- | :--- | :--- |
+| **API Credentials** | Permanent keys (`AKIA...` / `sk-...`) in `.env` files or databases. | **Zero secrets stored.** In-memory STS tokens auto-rotated every 60 min. |
+| **Supply Chain Exposure** | Malicious packages dump environment variables to external servers. | **No static keys exist** in the environment to steal. |
+| **Multi-Tenant Blast Radius** | Shared API keys. One compromised container drains everyone's quotas. | **Per-tenant IAM Task Roles.** Tenant A physically cannot call Tenant B's models. |
+| **Network Attack Surface** | Containers assigned public IPv4 addresses reachable by botnets. | **100% Private VPC (0 Public IPs).** ALB terminates TLS; tasks sit in private subnets. |
+
 **Instant Results:**
 - 🛡️ **Private MicroVM**: Runs in its own AWS Firecracker MicroVM on Fargate — no shared memory, no host kernel leaks.
 - 🌐 **Instant HTTPS Subdomain**: Live immediately at `https://finance-bot.<yourdomain.com>` with automatic ACM wildcard TLS.
@@ -306,7 +352,7 @@ module "finance_agent" {
 
 ### Pre-Configured Workload Templates
 TryBase includes battle-tested starter configurations:
-- **Custom Containers** (`modules/generic-workload`): Any Docker image from Docker Hub, ECR, or GitHub Packages.
+- **Custom Containers** (`modules/generic-workload`): Any Docker image from Docker Hub, ECR, or GitHub Packages with keyless Bedrock IAM.
 - **Dify AI Studio Adapter** (`terraform/tenant_dify.tf.example`): Visual agent studio with dedicated database & `pgvector` RAG.
 - **n8n Workflow Automation** (`modules/tenant`): Schema-isolated workflow automation engine with AES-256 encrypted credential vaults.
 
