@@ -91,3 +91,18 @@ graph TD
 
 - **JWT Cross-Pollination**: We use the Supabase JWT directly in AWS API Gateway to verify that the person requesting a `/provision` call is the actual owner of the account.
 - **Secret Management**: No database passwords or Stripe keys are stored in the frontend; all sensitive operations happen in Supabase Edge Functions or AWS Lambdas using IAM roles.
+
+---
+
+## 6. Architectural Decision Records (ADRs)
+
+### ADR-001: AWS ECS Fargate vs. Kubernetes (EKS) for Tenant Isolation
+
+* **Status**: Accepted
+* **Context**: We evaluated hosting containerized tenant workloads on AWS EKS (Kubernetes) versus AWS ECS Fargate.
+* **Decision**: We chose **AWS ECS Fargate** managed via **AWS Step Functions and CodeBuild**.
+* **Rationale & Trade-Offs**:
+  1. **Cost Floor**: EKS enforces a flat $73/month control plane fee plus worker nodes (~$150+/mo total baseline). ECS Fargate has $0 cluster fees and bills per-second per-task (~$4/tenant/mo).
+  2. **Security Isolation**: Kubernetes pods share a common Linux kernel on the node. Fargate runs every task within an independent **AWS Firecracker MicroVM**, eliminating noisy-neighbor vulnerabilities and cross-tenant memory leakage.
+  3. **Zero Maintenance Burden**: Kubernetes requires frequent cluster and API upgrades, CNI/CSI driver lifecycle management, and ingress controller tuning. Fargate is fully serverless and transparently maintained by AWS.
+  4. **Native ALB Host Routing**: ECS target groups integrate natively with ALB listener rules, eliminating the need for ingress controllers like Traefik or NGINX.
