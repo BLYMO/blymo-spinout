@@ -24,17 +24,36 @@ export default function Home() {
   const fullText = "curl -X POST https://api.trybase.io/provision \\\n  -H 'Authorization: Bearer YOUR_ACCESS_TOKEN' \\\n  -d '{ \"workspace\": \"acme-corp\" }'";
 
   useEffect(() => {
+    let subscription = null;
+
     // Initial session check
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-    });
+    if (supabase?.auth?.getSession) {
+      supabase.auth.getSession()
+        .then(({ data }) => {
+          setSession(data?.session || null);
+        })
+        .catch(err => {
+          console.warn('Could not retrieve auth session:', err);
+        });
+    }
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
+    if (supabase?.auth?.onAuthStateChange) {
+      try {
+        const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+          setSession(session);
+        });
+        subscription = data?.subscription;
+      } catch (err) {
+        console.warn('Could not register auth state listener:', err);
+      }
+    }
 
-    return () => subscription.unsubscribe();
+    return () => {
+      if (subscription?.unsubscribe) {
+        subscription.unsubscribe();
+      }
+    };
   }, []);
 
   useEffect(() => {
