@@ -2,18 +2,19 @@
 
 # 🚀 TryBase
 
-### The Open-Source Multi-Tenant n8n Cloud Orchestrator on AWS
+### The Open-Source Multi-Tenant, Multi-Cloud Orchestrator for AI Agents & Workflows
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Terraform](https://img.shields.io/badge/Terraform-%3E%3D_1.8-844FBA.svg?logo=terraform)](https://www.terraform.io/)
-[![AWS Fargate](https://img.shields.io/badge/AWS-Fargate_%26_RDS-FF9900.svg?logo=amazon-aws)](https://aws.amazon.com/)
-[![n8n](https://img.shields.io/badge/n8n-Workflow_Automation-EA4B71.svg?logo=n8n)](https://n8n.io/)
+[![Multi-Cloud](https://img.shields.io/badge/Multi--Cloud-AWS_%7C_GCP_%7C_Azure-orange.svg)](#-roadmap-the-path-to-workload-adapters)
+[![AI Workloads](https://img.shields.io/badge/AI_Workloads-Dify_%7C_n8n_%7C_Langflow-6366F1.svg)](#-curated-workload-adapters)
+[![pgvector](https://img.shields.io/badge/Vector_Memory-pgvector_RDS-336791.svg?logo=postgresql)](#-isolated-vector-memory-pgvector)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
-**Deploy, orchestrate, and manage an isolated fleet of production-grade n8n instances on AWS.**  
-Built for agencies, platforms, and internal engineering teams who need secure multi-tenancy without paying per-seat SaaS costs or managing fragile virtual machines.
+**Deploy, orchestrate, and scale an isolated fleet of production-grade AI Agent studios (Dify, n8n, Langflow) and autonomous workloads across clouds.**  
+Built for agencies, AI automation studios, and enterprise platforms who need strict client data isolation, dedicated microVM compute, and isolated vector memory (`pgvector`) for ~$4–$5/tenant/month without paying $50+/seat SaaS fees or maintaining Kubernetes.
 
-[Features](#-key-features) • [Architecture](#-architecture) • [Cost Breakdown](#-cost-breakdown) • [Quickstart](#-quickstart-guide) • [Tenant Provisioning](#-provisioning-tenants) • [License](#-license--disclaimer)
+[Features](#-key-features) • [Architecture](#-architecture) • [AI Workload Adapters](#-curated-workload-adapters) • [Cost Breakdown](#-cost-breakdown) • [Why Not Kubernetes?](#-why-trybase-instead-of-kubernetes-eks) • [Quickstart](#-quickstart-guide) • [License](#-license--disclaimer)
 
 ---
 
@@ -21,22 +22,23 @@ Built for agencies, platforms, and internal engineering teams who need secure mu
 
 ## 💡 Why TryBase?
 
-Running a single n8n instance on a VPS with Docker Compose is straightforward. But the moment you need to host **10, 20, or 50 isolated instances** for clients, departments, or users, you face a dilemma:
-- **n8n Cloud** becomes prohibitively expensive at scale ($50+/month per instance).
-- **A Single Shared n8n Instance** poses extreme security risks: shared memory, shared credentials, and execution bleed between tenants.
-- **A Separate Virtual Machine / RDS per Tenant** creates massive infrastructure bloat, complex patching, and high AWS bills.
+Hosting a single AI agent or n8n workflow on a VPS with Docker Compose is easy. But the moment you need to serve **10, 20, or 100 enterprise clients** or departments, you hit the multi-tenant AI wall:
+- **Commercial SaaS Platforms** (Dify Cloud, n8n Cloud) charge **$50–$200/seat/month**, destroying agency profit margins at scale.
+- **A Single Shared Server** creates catastrophic security risks: shared memory, API key cross-contamination, and runaway tool scripts taking down all clients.
+- **Kubernetes (EKS)** requires a dedicated SRE team, complex ingress controllers, and a minimum **$150–$250/month baseline fee** before running a single tenant.
+- **Separate Virtual Machines / RDS per Tenant** creates massive infrastructure bloat, complex patching, and crippling cloud bills.
 
 **TryBase solves this with the optimal cost-to-isolation pattern:**  
-Process-level container isolation on **AWS ECS Fargate**, database-level schema isolation on a shared **PostgreSQL RDS (Graviton)** cluster, and automated orchestration via **AWS Step Functions & CodeBuild**.
+Hardware-level microVM container isolation on **AWS ECS Fargate**, database and vector isolation on a shared **Graviton RDS PostgreSQL (`pgvector`)** cluster, and instant API orchestration via **AWS Step Functions & CodeBuild**.
 
-| Feature | Single Docker VM | n8n Cloud | TryBase |
-| :--- | :---: | :---: | :---: |
-| **Compute Isolation** | ❌ Shared Process | ✅ Isolated | ✅ **Dedicated Fargate Container** |
-| **Database Isolation** | ❌ Shared Tables | ✅ Isolated | ✅ **Isolated PostgreSQL Schema** |
-| **Dynamic Subdomains** | ❌ Manual Nginx | ✅ Automated | ✅ **Automated Host-Header Routing** |
-| **Credentials Encryption** | ❌ Single Key | ✅ Managed | ✅ **Unique AES-256 Key per Tenant** |
-| **API Provisioning** | ❌ Manual SSH | ❌ Dashboard only | ✅ **Serverless Step Function API** |
-| **Cost for 20 Tenants** | ~$40/mo (No isolation) | ~$1,000+/mo | **~$110–$140/mo (Full isolation)** |
+| Feature | Single Docker VPS | Managed AI SaaS | Kubernetes (EKS) | TryBase |
+| :--- | :---: | :---: | :---: | :---: |
+| **Compute Isolation** | ❌ Shared Process | ✅ Isolated | ⚠️ Shared Kernel | ✅ **Dedicated Firecracker MicroVM** |
+| **Database & Vector Memory** | ❌ Shared Tables | ✅ Isolated | ❌ Unmanaged Pods | ✅ **Dedicated RDS Schema/DB with `pgvector`** |
+| **Subdomain Routing** | ❌ Manual Nginx | ✅ Automated | ⚠️ Complex Ingress | ✅ **Automated Host-Header ALB Routing** |
+| **LLM Key Security** | ❌ Shared Env | ✅ Managed | ⚠️ Complex Secrets | ✅ **Unique AES-256 Vault per Tenant** |
+| **Base Platform Cost** | ~$20/mo (No isolation) | N/A ($50+/seat) | ~$150–$250/mo | **~$50–$65/mo (Fleet-wide)** |
+| **Cost for 20 Tenants** | ~$40/mo (Insecure) | ~$1,000–$4,000/mo | ~$350+/mo | **~$120–$140/mo (Full isolation)** |
 
 ---
 

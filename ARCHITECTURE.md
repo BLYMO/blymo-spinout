@@ -1,31 +1,36 @@
 # TryBase Platform Architecture
 
-TryBase is a multi-tenant SaaS and orchestration platform that provides isolated, production-grade n8n instances on AWS infrastructure, managed by a modern control plane.
+TryBase is an open-source, multi-tenant and multi-cloud orchestration platform that deploys and manages isolated, production-grade AI Agent studios (**Dify**, **n8n**, **Langflow**) and autonomous workloads at enterprise scale.
 
 ## 1. High-Level Overview
 
-The platform is split into two primary domains:
-- **The Control Plane (Supabase + Stripe)**: Handles user authentication, subscription management, and workspace metadata.
-- **The Data Plane (AWS)**: Orchestrates and hosts the actual containerized n8n workloads.
+The platform decouples into three independent, modular tiers:
+1. **The Control Plane (Supabase)**: Multi-tenant authentication, organization workspaces, billing subscriptions, and real-time state streaming.
+2. **The Cloud Orchestration Engine**: Serverless Infrastructure-as-Code (Terraform / OpenTofu) provisioners managing hardware-isolated microVMs and network routing (AWS Fargate / GCP Cloud Run / Azure Container Apps).
+3. **The AI Workload & Vector Layer**: Containerized agent runtimes with isolated PostgreSQL memory engines (`pgvector`) and automated per-tenant encryption vaults.
 
 ```mermaid
 graph TD
-    User((User)) -->|Browser| Frontend[Vite/React Frontend]
-    Frontend -->|Auth| Supabase[Supabase Control Plane]
+    User((Client / User)) -->|Browser| Frontend[Vite/React Dashboard]
+    Frontend -->|Auth & Workspaces| Supabase[Supabase Control Plane]
     Frontend -->|Payments| Stripe[Stripe Billing]
     
-    Supabase -->|Provision Signal| APIGW[AWS API Gateway]
-    APIGW -->|Trigger| SFN[AWS Step Functions]
+    Supabase -->|Provision Signal + JWT| APIGW[Cloud Provisioning API]
+    APIGW -->|Trigger State Machine| SFN[Cloud Orchestrator SFN]
     
-    SFN -->|Terraform Apply| CB[AWS CodeBuild]
-    SFN -->|DB Setup| LambdaDB[RDS Schema Lambda]
-    SFN -->|Success Ping| LambdaNotify[Callback Lambda]
+    SFN -->|1. Setup Isolated DB / Schema + pgvector| LambdaDB[RDS Database Lambda]
+    SFN -->|2. Apply IaC Tenant Adapter| CB[CloudBuild / CodeBuild]
+    SFN -->|3. Callback Handshake| LambdaNotify[Callback Lambda]
     
-    CB -->|State Locking| DDB[(AWS DynamoDB Locks)]
-    CB -->|Pull Source & Sync Tenants| S3[(AWS S3 State & Registry)]
-    CB -->|Deploy| ECS[AWS ECS Fargate]
-    LambdaNotify -->|Notify| EdgeFunc[Supabase Edge Function]
-    EdgeFunc -->|Realtime Update| Frontend
+    CB -->|State Locking| DDB[(State Locks Table)]
+    CB -->|Pull IaC Source & Sync| S3[(Remote State & Registry)]
+    CB -->|Deploy MicroVM Container| MicroVM[Tenant Workload: Dify / n8n / Custom]
+    
+    LambdaDB -->|pgvector Memory| RDS[(PostgreSQL RDS Cluster)]
+    MicroVM -->|Isolated Vector Memory| RDS
+    
+    LambdaNotify -->|Active Ping| EdgeFunc[Supabase Edge Function]
+    EdgeFunc -->|Realtime WebSocket Push| Frontend
 ```
 
 ---
@@ -54,24 +59,31 @@ graph TD
     1. **Task 1 (CodeBuild)**: Dynamically generates a Terraform `.tf` file and runs `terraform apply -target=module.tenant_id`.
     2. **Task 2 (Lambda)**: Connects to the shared RDS instance and creates a dedicated Postgres Schema for the tenant.
     3. **Task 3 (Lambda)**: Pings the Supabase Edge Function to mark the workspace as `active`.
-- **ECS Fargate**: Hosts the n8n containers. Each tenant gets a dedicated task with isolated CPU/RAM.
-- **ALB (Application Load Balancer)**: Uses Host-based routing (e.g., `tenant-a.n8n.trybase.io`) to forward traffic to the correct ECS service.
+- **ECS Fargate**: Hosts the AI agent containers. Each tenant gets a dedicated task running in an isolated AWS Firecracker MicroVM with dedicated CPU/RAM.
+- **ALB (Application Load Balancer)**: Uses Host-based routing (e.g., `tenant-a.agents.trybase.io`) to forward traffic to the correct ECS service.
 - **S3 & DynamoDB Backend**: S3 hosts the Terraform remote state (`shared/terraform.tfstate`), source archive (`source/infra.zip`), and tenant configurations. DynamoDB (`n8n-hosting-saas-tf-locks`) provides distributed locking and checksum verification to guarantee concurrency safety across parallel CodeBuild runs and local deployments.
 
-### D. External Services
+### D. AI Workload & Memory Layer
+- **n8n Automation Engine**: API agents and LangChain workflow nodes with isolated PostgreSQL schemas.
+- **Dify Agent Studio**: Enterprise multi-agent LLM platform running on Python/Celery and Next.js, with its own dedicated database and native `pgvector` index.
+- **pgvector Vector Memory**: Enables semantic search, RAG retrieval, and conversation history inside the shared RDS Graviton instance with zero third-party vector database subscriptions.
+
+### E. External Services
 - **Stripe**: Handles the subscription lifecycle (Starter/Pro/Business).
 - **Resend**: Triggers transactional emails when provisioning is complete.
 
 ---
 
-## 3. Data Isolation Model
+## 3. Data & Vector Isolation Model
 
-| Layer | Isolation Strategy |
-| :--- | :--- |
-| **Compute** | Dedicated ECS Fargate Task per tenant. |
-| **Network** | Traffic isolated via ALB Listener Rules and Security Groups. |
-| **Database** | Separate PostgreSQL Schemas (`CREATE SCHEMA`) on a shared RDS cluster. |
-| **Secrets** | Tenant-specific entries in AWS Secrets Manager. |
+| Layer | Isolation Strategy | Supported Workloads |
+| :--- | :--- | :--- |
+| **Compute** | Dedicated ECS Fargate Task (Hardware-isolated Firecracker MicroVM). | All (Dify, n8n, Langflow, Custom) |
+| **Network** | Traffic isolated via ALB Host-Header Listener Rules & VPC Security Groups. | All |
+| **Database (Schema-per-Tenant)** | Dedicated PostgreSQL Schema (`CREATE SCHEMA "<slug>"`) with `pgvector`. | n8n, Lightweight APIs |
+| **Database (Database-per-Tenant)** | Dedicated PostgreSQL Database (`CREATE DATABASE "db_<slug>"`) with `pgvector`. | Dify, Complex Django/Alembic apps |
+| **Vector Memory** | Tenant-scoped `pgvector` indexes and embeddings tables. | All RAG / Agent workflows |
+| **Secrets & Keys** | Unique 32-character AES-256 Vault per tenant in AWS Secrets Manager. | All |
 
 ---
 

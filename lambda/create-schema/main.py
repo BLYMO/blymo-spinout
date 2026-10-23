@@ -66,20 +66,54 @@ def handler(event, context):
         
         conn.autocommit = True
         
-        logger.info(f"Successfully connected to database. Creating schema: {db_schema} (for tenant: {tenant_id})")
+        workload_type = event.get('workload_type', 'n8n').lower()
+        mode = event.get('mode', 'schema').lower()
+
+        logger.info(f"Successfully connected to database. Provisioning {workload_type} (mode: {mode}) for tenant: {tenant_id}")
 
         with conn.cursor() as cursor:
-            # Use a parameterized query to prevent SQL injection, even from internal sources.
-            # The schema name is wrapped in quotes as an extra safety layer.
-            # "CREATE SCHEMA IF NOT EXISTS" is a safe way to make the operation idempotent.
-            cursor.execute("CREATE SCHEMA IF NOT EXISTS %s;", (psycopg2.extensions.AsIs(f'"{db_schema}"'),))
+            # Enable pgvector for AI semantic search & embeddings
+            try:
+                cursor.execute("CREATE EXTENSION IF NOT EXISTS vector;")
+                logger.info("Enabled pgvector extension in primary database.")
+            except Exception as ve:
+                logger.warning(f"Could not enable pgvector in primary db (non-fatal): {ve}")
+
+            if workload_type == "dify" or mode == "database":
+                db_name = f"db_{db_schema}"
+                cursor.execute("SELECT 1 FROM pg_database WHERE datname = %s;", (db_name,))
+                if not cursor.fetchone():
+                    cursor.execute(f'CREATE DATABASE "{db_name}";')
+                    logger.info(f"Successfully created dedicated database '{db_name}'")
+                else:
+                    logger.info(f"Database '{db_name}' already exists.")
+                
+                # Connect to the new database to enable pgvector for Dify RAG
+                try:
+                    tenant_conn = psycopg2.connect(
+                        host=db_host, port=db_port, user=db_user, password=db_password,
+                        database=db_name, connect_timeout=5, sslmode='require'
+                    )
+                    tenant_conn.autocommit = True
+                    with tenant_conn.cursor() as t_cursor:
+                        t_cursor.execute("CREATE EXTENSION IF NOT EXISTS vector;")
+                        logger.info(f"Enabled pgvector extension inside dedicated database '{db_name}'.")
+                    tenant_conn.close()
+                except Exception as t_ve:
+                    logger.warning(f"Could not enable pgvector in {db_name}: {t_ve}")
+
+                result_msg = f"Database '{db_name}' created successfully with pgvector for {workload_type}."
+            else:
+                # Default: schema-per-tenant (n8n, standard workloads)
+                cursor.execute("CREATE SCHEMA IF NOT EXISTS %s;", (psycopg2.extensions.AsIs(f'"{db_schema}"'),))
+                logger.info(f"Successfully created schema '{db_schema}'")
+                result_msg = f"Schema '{db_schema}' created successfully with pgvector for {workload_type}."
         
-        logger.info(f"Successfully created schema '{db_schema}'")
         conn.close()
 
         return {
             'statusCode': 200,
-            'body': json.dumps({'message': f"Schema '{tenant_id}' created successfully."})
+            'body': json.dumps({'message': result_msg, 'tenant_id': tenant_id, 'workload_type': workload_type})
         }
 
     except Exception as e:
