@@ -24,12 +24,36 @@ else
 fi
 
 # 2. Check Project Linking
+TFVARS="terraform/terraform.tfvars"
+EXPECTED_REF=""
+if [ -f "$TFVARS" ]; then
+    EXPECTED_REF=$(grep -E "^[[:space:]]*supabase_url" "$TFVARS" 2>/dev/null | sed -E 's/.*https:\/\/([a-zA-Z0-9_-]+)\.supabase\.co.*/\1/' || true)
+fi
+
+CURRENT_REF=""
+if [ -f "supabase/.temp/project-ref" ]; then
+    CURRENT_REF=$(cat supabase/.temp/project-ref 2>/dev/null || echo "")
+fi
+
 echo -e "${BOLD}Checking Supabase project connection...${RESET}"
-if [ ! -f "supabase/.temp/project-ref" ]; then
-    echo -e "${YELLOW}Your local workspace is not linked to a Supabase project yet.${RESET}"
-    echo -e "You can find your Project Reference in your Supabase dashboard URL:"
-    echo -e "e.g. https://supabase.com/dashboard/project/${BOLD}<PROJECT_REF>${RESET}\n"
-    read -p "Enter your Supabase Project Ref: " PROJECT_REF
+
+# If expected ref differs from current cached ref, clean stale cache
+if [ -n "$EXPECTED_REF" ] && [ -n "$CURRENT_REF" ] && [ "$EXPECTED_REF" != "$CURRENT_REF" ]; then
+    echo -e "${YELLOW}Detected project change in terraform.tfvars (${EXPECTED_REF} vs cached ${CURRENT_REF}). Resetting stale project cache...${RESET}"
+    rm -rf supabase/.temp
+    CURRENT_REF=""
+fi
+
+if [ -z "$CURRENT_REF" ]; then
+    if [ -n "$EXPECTED_REF" ]; then
+        PROJECT_REF="$EXPECTED_REF"
+        echo -e "Using Supabase project ref from terraform.tfvars: ${CYAN}$PROJECT_REF${RESET}"
+    else
+        echo -e "${YELLOW}Your local workspace is not linked to a Supabase project yet.${RESET}"
+        echo -e "You can find your Project Reference in your Supabase dashboard URL:"
+        echo -e "e.g. https://supabase.com/dashboard/project/${BOLD}<PROJECT_REF>${RESET}\n"
+        read -p "Enter your Supabase Project Ref: " PROJECT_REF
+    fi
 
     if [ -z "$PROJECT_REF" ]; then
         echo -e "${RED}❌ Error: Project Reference is required to link Supabase.${RESET}"
@@ -39,7 +63,7 @@ if [ ! -f "supabase/.temp/project-ref" ]; then
     echo -e "\nLinking to project ${CYAN}$PROJECT_REF${RESET}..."
     $SUPABASE_CMD link --project-ref "$PROJECT_REF"
 else
-    PROJECT_REF=$(cat supabase/.temp/project-ref 2>/dev/null || echo "")
+    PROJECT_REF="$CURRENT_REF"
     echo -e "✅ Found linked project: ${CYAN}${PROJECT_REF}${RESET}"
 fi
 
