@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Server, Shield, Zap, Terminal, Code, Database, ArrowRight, Check, Timer, Loader2, Menu, X } from 'lucide-react';
+import { Server, Shield, Zap, Terminal, Code, Database, ArrowRight, Check, Timer, Loader2, Menu, X, Star, Bot, Cpu, Sparkles, Cloud, Lock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import '../index.css';
-import CountdownTimer from '../components/CountdownTimer';
 import { supabase } from '../lib/supabaseClient';
 import { redirectToCheckout } from '../lib/billing';
 
@@ -20,6 +19,25 @@ export default function Home() {
   const [typedText, setTypedText] = useState('');
   const [showResult, setShowResult] = useState(false);
   const [session, setSession] = useState(null);
+
+  // Waitlist State
+  const [waitlistEmail, setWaitlistEmail] = useState('');
+  const [waitlistStatus, setWaitlistStatus] = useState('idle'); // 'idle' | 'loading' | 'success'
+
+  const handleJoinWaitlist = async (e) => {
+    e.preventDefault();
+    if (!waitlistEmail || !waitlistEmail.includes('@')) return;
+    setWaitlistStatus('loading');
+    try {
+      if (supabase?.from) {
+        await supabase.from('waitlist').insert([{ email: waitlistEmail, created_at: new Date().toISOString() }]);
+      }
+    } catch (err) {
+      console.warn('Waitlist notice:', err);
+    } finally {
+      setWaitlistStatus('success');
+    }
+  };
 
   const fullText = "curl -X POST https://api.trybase.io/provision \\\n  -H 'Authorization: Bearer YOUR_ACCESS_TOKEN' \\\n  -d '{ \"workspace\": \"acme-corp\" }'";
 
@@ -100,13 +118,14 @@ export default function Home() {
 
           <div className="desktop-nav">
             <a href="#features" className="btn btn-secondary" style={{ marginRight: '1rem', border: 'none', background: 'transparent' }}>Features</a>
+            <a href="#community" className="btn btn-secondary" style={{ marginRight: '1rem', border: 'none', background: 'transparent' }}>Cloud Waitlist</a>
+            <a href="https://github.com/rgayan12/trybase" target="_blank" rel="noreferrer" className="btn btn-secondary" style={{ marginRight: '1rem', border: 'none', background: 'transparent', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+              <Star size={16} fill="#facc15" color="#facc15" /> GitHub
+            </a>
             {session ? (
               <Link to="/dashboard" className="btn btn-primary">Dashboard</Link>
             ) : (
-              <>
-                <Link to="/auth?mode=login" className="btn btn-secondary" style={{ marginRight: '0.5rem', border: 'none', background: 'transparent' }}>Login</Link>
-                <a href="#pricing" onClick={(e) => { e.preventDefault(); document.getElementById('pricing').scrollIntoView({ behavior: 'smooth' }); }} className="btn btn-primary" style={{ textDecoration: 'none' }}>Start Provisioning</a>
-              </>
+              <Link to="/auth?mode=login" className="btn btn-primary" style={{ textDecoration: 'none' }}>Sign In</Link>
             )}
           </div>
 
@@ -118,55 +137,55 @@ export default function Home() {
 
       <div className={`mobile-menu-overlay ${isMenuOpen ? 'is-open' : ''}`}>
         <a href="#features" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Features</a>
-        <a href="#pricing" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Pricing</a>
+        <a href="#community" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Cloud Waitlist</a>
+        <a href="https://github.com/rgayan12/trybase" target="_blank" rel="noreferrer" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>GitHub</a>
         {session ? (
           <Link to="/dashboard" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Dashboard</Link>
         ) : (
-          <>
-            <Link to="/auth?mode=login" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Login</Link>
-            <Link to="/auth?mode=signup" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Join TryBase</Link>
-          </>
+          <Link to="/auth?mode=login" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Sign In</Link>
         )}
       </div>
 
       <main>
         {/* Hero Section */}
-        <section className="hero container">
-          <h1 className="animate-float text-gradient">
-            Fully Isolated, Serverless <span className="text-accent-gradient">n8n Workspaces.</span>
+        <section className="hero container" style={{ textAlign: 'center', paddingTop: '4rem', paddingBottom: '4rem' }}>
+          <div className="badge badge-pulse" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', background: 'rgba(59, 130, 246, 0.12)', color: 'var(--accent-blue)', border: '1px solid rgba(59, 130, 246, 0.3)', padding: '0.4rem 1rem', fontSize: '0.85rem' }}>
+            <Sparkles size={14} /> 100% OPEN SOURCE • APACHE 2.0
+          </div>
+
+          <h1 className="animate-float text-gradient" style={{ fontSize: 'clamp(2.5rem, 5vw, 4rem)', lineHeight: 1.15, marginBottom: '1.5rem', fontWeight: 800 }}>
+            Build & Scale Multi-Tenant AI Agents on <span className="text-accent-gradient">Battle-Tested Hyperscalers.</span>
           </h1>
-          <p>
-            Stop wrestling with complex infrastructure. TryBase provisions dedicated, production-grade n8n instances on AWS in minutes. Zero noisy neighbors. Total data isolation.
+
+          <p style={{ maxWidth: '750px', margin: '0 auto 2.5rem', fontSize: '1.2rem', lineHeight: 1.6, color: 'var(--text-secondary)' }}>
+            The open-source platform to deploy isolated containerized AI agents, workers, and autonomous workloads on AWS. Dedicated Firecracker microVMs, per-tenant IAM security, and native pgvector memory. Zero Kubernetes required.
           </p>
 
+          <div className="hero-actions" style={{ justifyContent: 'center', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+            <a
+              href="https://github.com/rgayan12/trybase"
+              target="_blank"
+              rel="noreferrer"
+              className="btn btn-primary"
+              style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.85rem 1.85rem', fontSize: '1.05rem', fontWeight: 600 }}
+            >
+              <Star size={18} fill="#facc15" color="#facc15" /> Star on GitHub
+            </a>
 
-
-          <CountdownTimer targetDate={new Date(Date.now() + 86400000 * 2).toISOString()} />
-
-          <div className="hero-actions">
             {session ? (
-              <Link to="/dashboard" className="btn btn-primary">
+              <Link to="/dashboard" className="btn btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.85rem 1.5rem' }}>
                 Go to Dashboard <ArrowRight size={18} />
               </Link>
             ) : (
-              <a href="#pricing" onClick={(e) => { e.preventDefault(); document.getElementById('pricing').scrollIntoView({ behavior: 'smooth' }); }} className="btn btn-primary" style={{ textDecoration: 'none' }}>
-                Start Your 7-Day Free Trial <ArrowRight size={18} />
+              <a
+                href="#community"
+                onClick={(e) => { e.preventDefault(); document.getElementById('community')?.scrollIntoView({ behavior: 'smooth' }); }}
+                className="btn btn-secondary"
+                style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.85rem 1.5rem' }}
+              >
+                <Terminal size={18} /> Quickstart Guide
               </a>
             )}
-            <button className="btn btn-secondary" style={{ position: 'relative' }}>
-              <Terminal size={18} /> API Reference
-              <span style={{
-                position: 'absolute',
-                top: '-10px',
-                right: '-10px',
-                background: 'var(--accent-purple)',
-                fontSize: '0.65rem',
-                padding: '2px 6px',
-                borderRadius: '4px',
-                fontWeight: '700',
-                letterSpacing: '0.05em'
-              }}>SOON</span>
-            </button>
           </div>
         </section>
 
@@ -341,143 +360,189 @@ export default function Home() {
         </section>
 
         {/* Features Section */}
-        <section id="features" className="features container">
-          <div className="section-header">
-            <h2>Everything you need, nothing you don't</h2>
-            <p className="text-secondary">Built for teams who want to move fast without building the infrastructure themselves.</p>
+        <section id="features" className="features container" style={{ padding: '5rem 0' }}>
+          <div className="section-header" style={{ textAlign: 'center', marginBottom: '3.5rem' }}>
+            <span className="badge" style={{ background: 'rgba(59, 130, 246, 0.15)', color: 'var(--accent-blue)', border: '1px solid rgba(59, 130, 246, 0.3)', padding: '0.35rem 0.85rem', fontSize: '0.8rem', borderRadius: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Enterprise Primitives
+            </span>
+            <h2 style={{ fontSize: '2.5rem', marginTop: '1rem', marginBottom: '0.75rem' }}>Battle-Tested Hyperscaler Architecture</h2>
+            <p className="text-secondary" style={{ maxWidth: '650px', margin: '0 auto', fontSize: '1.1rem' }}>
+              Built for platform teams, agencies, and developers who need true multi-tenant microVM isolation without the complexity of Kubernetes.
+            </p>
           </div>
 
-          <div className="features-grid">
-            <div className="glass-card feature-card">
-              <div className="feature-icon" style={{ color: '#3B82F6', background: 'rgba(59,130,246,0.1)' }}>
-                <Zap size={24} />
-              </div>
-              <h3>Live in Under 3 Minutes</h3>
-              <p>From clicking "Deploy Now" to a fully running n8n instance — no waiting around. Our Step Function orchestration is built for speed.</p>
-            </div>
-
-            <div className="glass-card feature-card">
-              <div className="feature-icon" style={{ color: '#8B5CF6', background: 'rgba(139,92,246,0.1)' }}>
+          <div className="features-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
+            <div className="glass-card feature-card" style={{ padding: '2rem' }}>
+              <div className="feature-icon" style={{ color: '#3B82F6', background: 'rgba(59,130,246,0.1)', padding: '0.75rem', borderRadius: '10px', display: 'inline-block', marginBottom: '1.25rem' }}>
                 <Shield size={24} />
               </div>
-              <h3>GDPR Friendly</h3>
-              <p>Built with data privacy at its core. Each workspace is fully isolated — your data stays yours. Ideal for teams who take compliance seriously.</p>
+              <h3 style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>Zero-Trust Per-Tenant IAM</h3>
+              <p className="text-secondary" style={{ lineHeight: 1.6 }}>
+                Every container gets its own dedicated AWS IAM Task Role. Tenant A physically cannot access Tenant B's data, private S3 documents, or Bedrock quota.
+              </p>
             </div>
 
-            <div className="glass-card feature-card">
-              <div className="feature-icon" style={{ color: '#10B981', background: 'rgba(16,185,129,0.1)' }}>
-                <Server size={24} />
+            <div className="glass-card feature-card" style={{ padding: '2rem' }}>
+              <div className="feature-icon" style={{ color: '#8B5CF6', background: 'rgba(139,92,246,0.1)', padding: '0.75rem', borderRadius: '10px', display: 'inline-block', marginBottom: '1.25rem' }}>
+                <Bot size={24} />
               </div>
-              <h3>Zero Cold Starts</h3>
-              <p>Your n8n container runs persistently on Fargate — always warm, always ready. No serverless spin-up delays when your workflows trigger.</p>
+              <h3 style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>Any Docker Container</h3>
+              <p className="text-secondary" style={{ lineHeight: 1.6 }}>
+                Container-agnostic runtime. Deploy your custom Python CrewAI agent, AutoGen team, FastAPI microservice, or pre-built stacks like Dify and n8n.
+              </p>
             </div>
 
-            <div className="glass-card feature-card">
-              <div className="feature-icon" style={{ color: '#F59E0B', background: 'rgba(245,158,11,0.1)' }}>
+            <div className="glass-card feature-card" style={{ padding: '2rem' }}>
+              <div className="feature-icon" style={{ color: '#10B981', background: 'rgba(16,185,129,0.1)', padding: '0.75rem', borderRadius: '10px', display: 'inline-block', marginBottom: '1.25rem' }}>
                 <Database size={24} />
               </div>
-              <h3>Automated Daily Backups</h3>
-              <p>Your workflow data is automatically backed up every day with point-in-time recovery on Pro and Business plans. Sleep easy.</p>
+              <h3 style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>Native Vector Memory (pgvector)</h3>
+              <p className="text-secondary" style={{ lineHeight: 1.6 }}>
+                Multi-tenant vector search built directly into Graviton PostgreSQL. Every tenant gets dedicated embeddings collections and RAG storage at $0 extra cost.
+              </p>
             </div>
 
-            <div className="glass-card feature-card">
-              <div className="feature-icon" style={{ color: '#EC4899', background: 'rgba(236,72,153,0.1)' }}>
+            <div className="glass-card feature-card" style={{ padding: '2rem' }}>
+              <div className="feature-icon" style={{ color: '#F59E0B', background: 'rgba(245,158,11,0.1)', padding: '0.75rem', borderRadius: '10px', display: 'inline-block', marginBottom: '1.25rem' }}>
+                <Cloud size={24} />
+              </div>
+              <h3 style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>Amazon Bedrock AI Gateway</h3>
+              <p className="text-secondary" style={{ lineHeight: 1.6 }}>
+                Keyless IAM model invocation for Claude 3.5 Sonnet, Llama 3, and Titan. Built-in PII redaction and safety guardrails inside your private VPC.
+              </p>
+            </div>
+
+            <div className="glass-card feature-card" style={{ padding: '2rem' }}>
+              <div className="feature-icon" style={{ color: '#EC4899', background: 'rgba(236,72,153,0.1)', padding: '0.75rem', borderRadius: '10px', display: 'inline-block', marginBottom: '1.25rem' }}>
                 <Code size={24} />
               </div>
-              <h3>Your Own Subdomain</h3>
-              <p>Every workspace gets a unique, memorable URL like <span style={{ fontFamily: 'monospace', color: '#8DC891' }}>fast-fox-jumps.trybase.io</span>. Ready to share the moment it's live.</p>
+              <h3 style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>Instant Wildcard Subdomains</h3>
+              <p className="text-secondary" style={{ lineHeight: 1.6 }}>
+                Every container is automatically wired to an Application Load Balancer rule with wildcard SSL (<span style={{ fontFamily: 'monospace', color: '#8DC891' }}>tenant.yourdomain.com</span>).
+              </p>
             </div>
 
-            <div className="glass-card feature-card">
-              <div className="feature-icon" style={{ color: '#FF6D5A', background: 'rgba(255,109,90,0.1)' }}>
+            <div className="glass-card feature-card" style={{ padding: '2rem' }}>
+              <div className="feature-icon" style={{ color: '#00C7B7', background: 'rgba(0,199,183,0.1)', padding: '0.75rem', borderRadius: '10px', display: 'inline-block', marginBottom: '1.25rem' }}>
                 <Terminal size={24} />
               </div>
-              <h3>Zero DevOps Required</h3>
-              <p>No servers to patch. No Docker files to maintain. No Kubernetes to debug at 2am. We handle the infrastructure so you focus on building workflows.</p>
+              <h3 style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>Pre-Deploy FinOps (Infracost)</h3>
+              <p className="text-secondary" style={{ lineHeight: 1.6 }}>
+                Forecast exact cloud infrastructure bills before deploying. Run <code>make cost</code> to preview monthly AWS fleet expenses itemized down to the cent.
+              </p>
             </div>
           </div>
         </section>
-        {/* Pricing Section */}
-        <section id="pricing" className="pricing">
+
+        {/* Community & Waitlist Section */}
+        <section id="community" className="pricing" style={{ padding: '6rem 0' }}>
           <div className="container">
-            <div className="section-header">
-              <h2>Simple, predictable pricing</h2>
-              <p className="text-secondary">Enterprise-grade infrastructure shouldn't require an enterprise contract.</p>
+            <div className="section-header" style={{ textAlign: 'center', marginBottom: '3.5rem' }}>
+              <span className="badge" style={{ background: 'rgba(59, 130, 246, 0.15)', color: 'var(--accent-blue)', border: '1px solid rgba(59, 130, 246, 0.3)', padding: '0.35rem 0.85rem', fontSize: '0.8rem', borderRadius: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Open Source & Cloud
+              </span>
+              <h2 style={{ fontSize: '2.5rem', marginTop: '1rem', marginBottom: '0.75rem' }}>Deploy on your AWS. Or let us manage it.</h2>
+              <p className="text-secondary" style={{ maxWidth: '600px', margin: '0 auto', fontSize: '1.1rem' }}>
+                TryBase is 100% Apache 2.0 open source. Self-host on your own cloud today, or join the early access waitlist for our managed control plane.
+              </p>
             </div>
 
-            <div className="pricing-grid">
-              {/* Starter Tier */}
-              <div className="glass-card pricing-card">
+            <div className="pricing-grid" style={{ maxWidth: '950px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem' }}>
+              
+              {/* Community Open Source Tier */}
+              <div className="glass-card pricing-card" style={{ padding: '2.5rem', display: 'flex', flexDirection: 'column' }}>
                 <div className="pricing-header">
-                  <h3>Starter</h3>
-                  <div className="price">$19<span>/mo</span></div>
-                  <p className="text-secondary" style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>Perfect for small automations.</p>
-                  <div className="badge badge-pulse" style={{ marginTop: '1rem' }}>7 Days Free</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h3 style={{ fontSize: '1.4rem' }}>Community Edition</h3>
+                    <span className="badge" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                      Free Forever
+                    </span>
+                  </div>
+                  <div className="price" style={{ margin: '1rem 0', fontSize: '2.5rem', fontWeight: 800 }}>$0<span> / self-hosted</span></div>
+                  <p className="text-secondary" style={{ fontSize: '0.95rem', lineHeight: 1.5 }}>
+                    Deploy and scale directly into your own AWS account with full data sovereignty and zero vendor lock-in.
+                  </p>
                 </div>
-                <ul className="pricing-features">
-                  <li><Check size={18} className="icon-check" /> Dedicated Fargate Container</li>
-                  <li><Check size={18} className="icon-check" /> 15 Active Workflows</li>
-                  <li><Check size={18} className="icon-check" /> Memorable Subdomain (e.g. fast-fox.trybase.io)</li>
-                  <li><Check size={18} className="icon-check" /> Community Support</li>
-                  <li><Check size={18} className="icon-check" /> Standard n8n Executions</li>
+
+                <ul className="pricing-features" style={{ margin: '2rem 0', flexGrow: 1, listStyle: 'none', padding: 0 }}>
+                  <li style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}><Check size={18} className="icon-check" /> <span><strong>Any Docker Container</strong> (Python, CrewAI, Dify, n8n)</span></li>
+                  <li style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}><Check size={18} className="icon-check" /> <span><strong>Dedicated MicroVM Compute</strong> on AWS Fargate</span></li>
+                  <li style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}><Check size={18} className="icon-check" /> <span><strong>Per-Tenant IAM Roles</strong> (Zero credential cross-talk)</span></li>
+                  <li style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}><Check size={18} className="icon-check" /> <span><strong>Native pgvector Memory</strong> on Graviton RDS</span></li>
+                  <li style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}><Check size={18} className="icon-check" /> <span><strong>Dynamic Subdomain Routing</strong> with Wildcard SSL</span></li>
+                  <li style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}><Check size={18} className="icon-check" /> <span><strong>Infracost FinOps</strong> CLI integration (<code>make cost</code>)</span></li>
                 </ul>
-                <button
-                  onClick={() => {
-                    window.amplitude?.track('Plan Selected', { plan: 'starter' });
-                    redirectToCheckout('starter');
-                  }}
+
+                <a
+                  href="https://github.com/rgayan12/trybase"
+                  target="_blank"
+                  rel="noreferrer"
                   className="btn btn-secondary"
-                  style={{ width: '100%', justifyContent: 'center' }}
+                  style={{ width: '100%', justifyContent: 'center', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.85rem' }}
                 >
-                  Start Free Trial
-                </button>
+                  <Star size={16} fill="#facc15" color="#facc15" /> Clone & Star on GitHub
+                </a>
               </div>
 
-              {/* Pro Tier (Featured) */}
-              <div className="glass-card pricing-card featured" style={{ position: 'relative' }}>
-                <div className="popular-badge">Best Value</div>
-                <div className="pricing-header">
-                  <h3>Pro</h3>
-                  <div className="price">$79<span>/mo</span></div>
-                  <p className="text-secondary" style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>Built for scaling production operations.</p>
-                  <div className="badge badge-pulse" style={{ marginTop: '1rem', background: 'rgba(255,255,255,0.1)', color: 'white' }}>7 Days Free</div>
+              {/* Managed Cloud Waitlist Tier */}
+              <div className="glass-card pricing-card featured" style={{ padding: '2.5rem', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+                <div className="popular-badge" style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', position: 'absolute', top: '-12px', right: '20px', padding: '0.25rem 0.75rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 700 }}>
+                  Coming Soon
                 </div>
-                <ul className="pricing-features">
-                  <li><Check size={18} className="icon-check" /> Upgraded Dedicated Resources</li>
-                  <li><Check size={18} className="icon-check" /> Uncapped Workflows</li>
-                  <li><Check size={18} className="icon-check" /> Automated Daily Backups</li>
-                  <li><Check size={18} className="icon-check" /> Memorable Subdomain</li>
-                  <li><Check size={18} className="icon-check" /> Priority Email Support</li>
+                <div className="pricing-header">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h3 style={{ fontSize: '1.4rem' }}>TryBase Cloud</h3>
+                    <span className="badge" style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#c084fc', border: '1px solid rgba(168, 85, 247, 0.3)' }}>
+                      Managed Platform
+                    </span>
+                  </div>
+                  <div className="price" style={{ margin: '1rem 0', fontSize: '2.5rem', fontWeight: 800 }}>Early Access<span> / waitlist</span></div>
+                  <p className="text-secondary" style={{ fontSize: '0.95rem', lineHeight: 1.5 }}>
+                    Zero-DevOps managed fleet orchestration. We run the control plane; you focus on building agents.
+                  </p>
+                </div>
+
+                <ul className="pricing-features" style={{ margin: '2rem 0', flexGrow: 1, listStyle: 'none', padding: 0 }}>
+                  <li style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}><Check size={18} className="icon-check" /> <span><strong>Scale-to-Zero Auto-Idling</strong> (Save 80% on compute)</span></li>
+                  <li style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}><Check size={18} className="icon-check" /> <span><strong>Centralized Bedrock Gateway</strong> with PII Guardrails</span></li>
+                  <li style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}><Check size={18} className="icon-check" /> <span><strong>Multi-Tenant Token Metering</strong> & cost attribution</span></li>
+                  <li style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}><Check size={18} className="icon-check" /> <span><strong>Multi-Cloud Support</strong> (AWS, GCP Cloud Run, Azure)</span></li>
+                  <li style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}><Check size={18} className="icon-check" /> <span><strong>Automated Nightly Backups</strong> & SSL lifecycle</span></li>
                 </ul>
-                <button
-                  onClick={() => {
-                    window.amplitude?.track('Plan Selected', { plan: 'pro' });
-                    redirectToCheckout('pro');
-                  }}
-                  className="btn btn-primary"
-                  style={{ width: '100%', justifyContent: 'center' }}
-                >
-                  Start 7-Day Trial
-                </button>
+
+                {waitlistStatus === 'success' ? (
+                  <div style={{ padding: '1rem', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '8px', color: '#34d399', textAlign: 'center', fontSize: '0.95rem', fontWeight: 500 }}>
+                    🎉 You're on the early access list! We'll reach out soon.
+                  </div>
+                ) : (
+                  <form onSubmit={handleJoinWaitlist} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    <input
+                      type="email"
+                      required
+                      placeholder="Enter your work email"
+                      value={waitlistEmail}
+                      onChange={(e) => setWaitlistEmail(e.target.value)}
+                      style={{
+                        padding: '0.85rem 1rem',
+                        borderRadius: '8px',
+                        border: '1px solid var(--border-subtle)',
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        color: 'white',
+                        fontSize: '0.95rem'
+                      }}
+                    />
+                    <button
+                      type="submit"
+                      disabled={waitlistStatus === 'loading'}
+                      className="btn btn-primary"
+                      style={{ width: '100%', justifyContent: 'center', padding: '0.85rem' }}
+                    >
+                      {waitlistStatus === 'loading' ? <Loader2 size={16} className="animate-spin" /> : 'Join Early Access Waitlist'}
+                    </button>
+                  </form>
+                )}
               </div>
 
-              {/* Enterprise Tier */}
-              <div className="glass-card pricing-card">
-                <div className="pricing-header">
-                  <h3>Business</h3>
-                  <div className="price">$149+<span>/mo</span></div>
-                  <p className="text-secondary" style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>Multi-tenant power and compliance.</p>
-                </div>
-                <ul className="pricing-features">
-                  <li><Check size={18} className="icon-check" /> Maximum Fargate Allocation</li>
-                  <li><Check size={18} className="icon-check" /> Dedicated Single-Tenant RDS</li>
-                  <li><Check size={18} className="icon-check" /> Custom Domain (bring your own)</li>
-                  <li><Check size={18} className="icon-check" /> Point-in-time Recovery Backups</li>
-                  <li><Check size={18} className="icon-check" /> Custom Docker Image Support</li>
-                  <li><Check size={18} className="icon-check" /> 24/7 SLA Supported</li>
-                </ul>
-                <a href="mailto:bastiyan@blymo.co.uk" className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center', textDecoration: 'none' }}>Talk to Us</a>
-              </div>
             </div>
           </div>
         </section>
@@ -489,12 +554,12 @@ export default function Home() {
             <img src="/favicon.svg" alt="TryBase Icon" style={{ height: '24px', filter: 'brightness(0) invert(1)' }} />
             TryBase
           </div>
-          <p>Enterprise Grade n8n Instances in Minutes.</p>
+          <p>The Open-Source Platform to Build & Scale Multi-Tenant AI Agents on Battle-Tested Hyperscalers.</p>
           <div style={{ marginTop: '1rem' }}>
             <a href="mailto:bastiyan@blymo.co.uk" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Contact Us</a>
           </div>
           <p style={{ marginTop: '2rem', fontSize: '0.85rem', color: 'rgba(255,255,255,0.2)' }}>
-            &copy; 2026 TryBase. Not affiliated with n8n.
+            &copy; 2026 TryBase. Apache 2.0 Open Source.
           </p>
         </div>
       </footer>

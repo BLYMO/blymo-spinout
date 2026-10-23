@@ -2,19 +2,19 @@
 
 # 🚀 TryBase
 
-### The Open-Source Multi-Tenant, Multi-Cloud Orchestrator for AI Agents & Workflows
+### The Open-Source Platform to Build, Run, and Scale Multi-Tenant AI Agents on Battle-Tested Hyperscalers
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Terraform](https://img.shields.io/badge/Terraform-%3E%3D_1.8-844FBA.svg?logo=terraform)](https://www.terraform.io/)
-[![Multi-Cloud](https://img.shields.io/badge/Multi--Cloud-AWS_%7C_GCP_%7C_Azure-orange.svg)](#-roadmap-the-path-to-workload-adapters)
-[![AI Workloads](https://img.shields.io/badge/AI_Workloads-Dify_%7C_n8n_%7C_Langflow-6366F1.svg)](#-curated-workload-adapters)
-[![pgvector](https://img.shields.io/badge/Vector_Memory-pgvector_RDS-336791.svg?logo=postgresql)](#-isolated-vector-memory-pgvector)
+[![GitHub](https://img.shields.io/badge/GitHub-Open_Source-181717?logo=github)](https://github.com/rgayan12/trybase)
+[![Hyperscaler](https://img.shields.io/badge/Hyperscaler-AWS_Fargate_%26_Bedrock-FF9900?logo=amazon-aws)](https://aws.amazon.com)
+[![Vector Memory](https://img.shields.io/badge/Vector_Memory-pgvector_RDS-336791.svg?logo=postgresql)](#-schema--database-isolation-with-pgvector)
+[![Infracost FinOps](https://img.shields.io/badge/FinOps-Infracost_Verified-00C7B7.svg)](#-forecasting-cloud-costs-with-infracost)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
-**Deploy, orchestrate, and scale an isolated fleet of production-grade AI Agent studios (Dify, n8n, Langflow) and autonomous workloads across clouds.**  
-Built for agencies, AI automation studios, and enterprise platforms who need strict client data isolation, dedicated microVM compute, and isolated vector memory (`pgvector`) for ~$4–$5/tenant/month without paying $50+/seat SaaS fees or maintaining Kubernetes.
+**Deploy, isolate, and scale any containerized AI agent, autonomous worker, or workflow engine as a production-grade multi-tenant fleet on AWS.**  
+Built for AI agencies, developers, and platform teams who need strict client data isolation, dedicated microVM compute, per-tenant IAM security, dynamic wildcard SSL subdomains, and native vector memory (`pgvector`) for ~$4–$5/tenant/month without paying $50+/seat SaaS fees or maintaining Kubernetes.
 
-[Features](#-key-features) • [Architecture](#-architecture) • [AI Workload Adapters](#-curated-workload-adapters) • [Cost Breakdown](#-cost-breakdown) • [Why Not Kubernetes?](#-why-trybase-instead-of-kubernetes-eks) • [Quickstart](#-quickstart-guide) • [License](#-license--disclaimer)
+[Why TryBase?](#-why-trybase) • [Architecture](#-architecture) • [Run Any Container](#-run-any-containerized-ai-agent-or-workload) • [Cost Breakdown](#-cost-breakdown) • [Why Not Kubernetes?](#-why-trybase-instead-of-kubernetes-eks) • [Quickstart](#-quickstart-guide) • [License](#-license--disclaimer)
 
 ---
 
@@ -22,18 +22,19 @@ Built for agencies, AI automation studios, and enterprise platforms who need str
 
 ## 💡 Why TryBase?
 
-Hosting a single AI agent or n8n workflow on a VPS with Docker Compose is easy. But the moment you need to serve **10, 20, or 100 enterprise clients** or departments, you hit the multi-tenant AI wall:
-- **Commercial SaaS Platforms** (Dify Cloud, n8n Cloud) charge **$50–$200/seat/month**, destroying agency profit margins at scale.
+Building an AI agent or microservice locally in Docker is simple (`docker run my-agent:latest`). But the moment you need to serve **10, 20, or 100 isolated clients or teams**, running containers in production becomes an operational nightmare:
+- **Commercial SaaS Platforms** charge **$50–$200/seat/month**, destroying agency and software profit margins at scale.
 - **A Single Shared Server** creates catastrophic security risks: shared memory, API key cross-contamination, and runaway tool scripts taking down all clients.
 - **Kubernetes (EKS)** requires a dedicated SRE team, complex ingress controllers, and a minimum **$150–$250/month baseline fee** before running a single tenant.
 - **Separate Virtual Machines / RDS per Tenant** creates massive infrastructure bloat, complex patching, and crippling cloud bills.
 
-**TryBase solves this with the optimal cost-to-isolation pattern:**  
-Hardware-level microVM container isolation on **AWS ECS Fargate**, database and vector isolation on a shared **Graviton RDS PostgreSQL (`pgvector`)** cluster, and instant API orchestration via **AWS Step Functions & CodeBuild**.
+**TryBase solves this with a universal container orchestration pattern:**  
+Hardware-level microVM container isolation on **AWS ECS Fargate**, database and vector isolation on a shared **Graviton RDS PostgreSQL (`pgvector`)** cluster, and instant API orchestration via **AWS Step Functions & CodeBuild**. Bring any Docker image, and TryBase turns it into an isolated, routed, production-grade cloud service in minutes.
 
 | Feature | Single Docker VPS | Managed AI SaaS | Kubernetes (EKS) | TryBase |
 | :--- | :---: | :---: | :---: | :---: |
 | **Compute Isolation** | ❌ Shared Process | ✅ Isolated | ⚠️ Shared Kernel | ✅ **Dedicated Firecracker MicroVM** |
+| **Any Docker Image** | ✅ Manual CLI | ❌ Closed Vendor | ✅ Supported | ✅ **Universal Container Module** |
 | **Database & Vector Memory** | ❌ Shared Tables | ✅ Isolated | ❌ Unmanaged Pods | ✅ **Dedicated RDS Schema/DB with `pgvector`** |
 | **Subdomain Routing** | ❌ Manual Nginx | ✅ Automated | ⚠️ Complex Ingress | ✅ **Automated Host-Header ALB Routing** |
 | **LLM Key Security** | ❌ Shared Env | ✅ Managed | ⚠️ Complex Secrets | ✅ **Unique AES-256 Vault per Tenant** |
@@ -46,20 +47,20 @@ Hardware-level microVM container isolation on **AWS ECS Fargate**, database and 
 
 ```mermaid
 graph TD
-    User([End User / Client]) -->|HTTPS *.n8n.yourdomain.com| ALB[AWS Application Load Balancer]
+    User([End User / Client]) -->|HTTPS *.<subdomain>.yourdomain.com| ALB[AWS Application Load Balancer]
     
     subgraph Data Plane [Data Plane: Private Subnets]
-        ALB -->|Host-Header Route| F1[Tenant A: ECS Fargate Task]
-        ALB -->|Host-Header Route| F2[Tenant B: ECS Fargate Task]
-        ALB -->|Host-Header Route| F3[Tenant C: ECS Fargate Task]
+        ALB -->|Host-Header Route| F1[Tenant A: AI Agent / Workload Task]
+        ALB -->|Host-Header Route| F2[Tenant B: AI Agent / Workload Task]
+        ALB -->|Host-Header Route| F3[Tenant C: AI Agent / Workload Task]
         
-        F1 -->|schema: tenant_a| RDS[(Shared PostgreSQL RDS)]
-        F2 -->|schema: tenant_b| RDS
-        F3 -->|schema: tenant_c| RDS
+        F1 -->|isolated schema/db & pgvector| RDS[(Shared PostgreSQL RDS with pgvector)]
+        F2 -->|isolated schema/db & pgvector| RDS
+        F3 -->|isolated schema/db & pgvector| RDS
         
-        SM[AWS Secrets Manager] -.->|Per-Tenant N8N_ENCRYPTION_KEY| F1
-        SM -.->|Per-Tenant N8N_ENCRYPTION_KEY| F2
-        SM -.->|Per-Tenant N8N_ENCRYPTION_KEY| F3
+        SM[AWS Secrets Manager] -.->|Per-Tenant Secret Vault / API Keys| F1
+        SM -.->|Per-Tenant Secret Vault / API Keys| F2
+        SM -.->|Per-Tenant Secret Vault / API Keys| F3
     end
 
     subgraph Control Plane [Control Plane: Orchestration Engine]
@@ -67,7 +68,7 @@ graph TD
         APIGW -->|ES256 Verification| Auth[Lambda JWT Authorizer]
         Auth -->|Authorized| SFN[AWS Step Functions State Machine]
         
-        SFN -->|1. Create DB Schema| L1[Lambda: Create Schema]
+        SFN -->|1. Create DB Schema/DB & pgvector| L1[Lambda: Create Schema]
         SFN -->|2. Generate & Apply Terraform| CB[AWS CodeBuild]
         CB -->|Lock & Consistency Check| DDB[(AWS DynamoDB Lock Table)]
         CB -->|Pull Source & Sync Tenants| S3[(S3 State & Tenant Registry)]
@@ -75,21 +76,24 @@ graph TD
     end
 ```
 
-### 1. Dedicated Compute (ECS Fargate)
-Every tenant receives their own dedicated AWS Fargate task running n8n. Tasks run inside private subnets without public IPs. If one tenant runs an infinite loop or heavy memory workload, no other tenant is impacted.
+### 1. Dedicated MicroVM Compute (ECS Fargate)
+Every tenant receives their own dedicated AWS Fargate task running their containerized AI agent, worker, or workflow engine. Tasks run inside private subnets without public IPs. If one tenant runs a heavy loop or crashes, no other tenant is impacted.
 
-### 2. Schema-Scoping Engine (RDS PostgreSQL)
-Rather than paying for 20 separate database instances, TryBase uses a shared RDS PostgreSQL instance (Graviton 2) with **dedicated database schemas** (`CREATE SCHEMA tenant_slug`). The custom container Lambda automatically validates and provisions schemas with hyphen-to-underscore sanitization before containers start.
+### 2. Schema & Database Isolation with `pgvector` (RDS PostgreSQL)
+Rather than paying for 20 separate database instances, TryBase uses a shared Graviton RDS PostgreSQL cluster with **dual-mode isolation**:
+- **Schema-per-tenant** (`CREATE SCHEMA tenant_slug`): Ultra-lightweight for standard microservices and n8n.
+- **Database-per-tenant** (`CREATE DATABASE db_tenant_slug`): Complete catalog isolation for frameworks like Dify.
+Both modes automatically enable the **`vector` extension (`pgvector`)**, giving every tenant their own isolated vector memory and embeddings index at **$0 extra infrastructure cost**.
 
 ### 3. Dynamic Subdomain Routing (Application Load Balancer)
-A shared ALB handles TLS termination via AWS Certificate Manager (ACM). When a tenant is provisioned, CodeBuild attaches a listener rule matching the tenant's host header (e.g. `client-a.n8n.yourdomain.com`) forwarding directly to that tenant's target group.
+A shared ALB handles TLS termination via AWS Certificate Manager (ACM). When a container is provisioned, CodeBuild attaches a listener rule matching the tenant's host header (e.g. `client-a.<domain>`) forwarding directly to that tenant's target group.
 
 ### 4. Zero-Knowledge Credential Security
-n8n uses `N8N_ENCRYPTION_KEY` to encrypt API keys and credentials in its database. TryBase mints a unique 32-character AES-256 key per tenant inside AWS Secrets Manager. Even on a shared database, one tenant cannot decrypt another tenant's credentials.
+TryBase provisions a dedicated AES-256 secret vault per tenant in AWS Secrets Manager for encryption keys, tool credentials, and LLM API keys (OpenAI, Anthropic, Bedrock). Even on a shared database, one tenant cannot decrypt another tenant's credentials.
 
 ### 5. Serverless Provisioning Pipeline
 - **API Gateway**: REST endpoint with custom ES256 JWT authorizer for Supabase / custom auth tokens.
-- **Step Functions**: 4-step state machine orchestrating schema generation, dynamic CodeBuild Terraform application, and callback notification.
+- **Step Functions**: 4-step state machine orchestrating database setup, dynamic CodeBuild Terraform application, and callback notification.
 - **S3 State & Tenant Registry**: CodeBuild automatically syncs `tenant_<slug>.tf` configurations, stores the Terraform remote state (`shared/terraform.tfstate`), and pulls the infrastructure source archive (`source/infra.zip`).
 - **DynamoDB State Lock Table**: Manages distributed state locks and MD5 cryptographic integrity for Terraform (`n8n-hosting-saas-tf-locks`). Prevents race conditions and state corruption when multiple tenants are provisioned concurrently by CodeBuild or when local administrators run Terraform.
 
@@ -260,44 +264,51 @@ If you prefer managing tenants statically in Git without the API:
 
 ---
 
-### Option C: Generic Container ("Hello World")
-TryBase isn't locked to n8n! Its core orchestration brain can run **any arbitrary container** with private Fargate isolation, custom environment variables, and automated subdomain routing on the shared ALB.
+## 📦 Run Any Containerized AI Agent or Workload
 
-To deploy a lightweight generic "Hello World" service:
-1. Copy the generic workload template:
-   ```bash
-   cp tenant_hello_world.tf.example tenant_hello.tf
-   ```
-2. Inspect `tenant_hello.tf`:
-   ```hcl
-   module "hello_world" {
-     source = "./modules/generic-workload"
+TryBase is **100% container-agnostic**. While we provide pre-configured templates for common engines like Dify and n8n, the core superpower is the **Generic Container Module** (`modules/generic-workload`):
 
-     service_name    = "hello-world"
-     subdomain       = "hello"
-     container_image = "nginxdemos/hello:plain-text"
-     container_port  = 80
-     health_check_path = "/"
+> **Bring any Docker container** — your custom Python CrewAI agent, AutoGen bot, LangChain pipeline, FastAPI microservice, or open-source tool — and TryBase gives it dedicated microVM compute, dynamic wildcard SSL subdomains, and native vector memory in seconds.
 
-     environment_variables = {
-       WELCOME_MESSAGE = "Hello from TryBase Generic Container!"
-     }
+### Example: Deploying a Custom Python AI Agent (CrewAI / AutoGen / LangChain)
 
-     # Bind to TryBase shared infrastructure
-     vpc_id                     = module.vpc.vpc_id
-     private_subnet_ids         = module.vpc.private_subnets
-     ecs_cluster_name           = aws_ecs_cluster.main.name
-     alb_listener_arn           = aws_lb_listener.https.arn
-     alb_security_group_id      = aws_security_group.alb.id
-     alb_listener_rule_priority = 200
-     domain_name                = var.base_domain
-   }
-   ```
-3. Deploy it in seconds:
-   ```bash
-   terraform apply -target=module.hello_world
-   ```
-4. Visit `https://hello.<your-base-domain>` — your service is live behind TLS and isolated in private subnets!
+```hcl
+module "finance_agent" {
+  source = "./modules/generic-workload"
+
+  service_name      = "finance-agent"
+  subdomain         = "finance-bot"
+  container_image   = "ghcr.io/my-org/crewai-finance-agent:v1.0"
+  container_port    = 8000
+  health_check_path = "/health"
+
+  environment_variables = {
+    OPENAI_API_KEY = "sk-..."
+    DATABASE_URL   = "postgresql://user:pass@${aws_db_instance.rds.endpoint}/postgres?sslmode=require"
+    AGENT_ENV      = "production"
+  }
+
+  # Bind to TryBase shared infrastructure
+  vpc_id                     = module.vpc.vpc_id
+  private_subnet_ids         = module.vpc.private_subnets
+  ecs_cluster_name           = aws_ecs_cluster.main.name
+  alb_listener_arn           = aws_lb_listener.https.arn
+  alb_security_group_id      = aws_security_group.alb.id
+  alb_listener_rule_priority = 150
+  domain_name                = var.base_domain
+}
+```
+
+**Instant Results:**
+- 🛡️ **Private MicroVM**: Runs in its own AWS Firecracker MicroVM on Fargate — no shared memory, no host kernel leaks.
+- 🌐 **Instant HTTPS Subdomain**: Live immediately at `https://finance-bot.<yourdomain.com>` with automatic ACM wildcard TLS.
+- 🧠 **Native Vector Memory**: Connected directly to Graviton RDS with native `pgvector` enabled for semantic search and RAG.
+
+### Pre-Configured Workload Templates
+TryBase includes battle-tested starter configurations:
+- **Custom Containers** (`modules/generic-workload`): Any Docker image from Docker Hub, ECR, or GitHub Packages.
+- **Dify AI Studio Adapter** (`terraform/tenant_dify.tf.example`): Visual agent studio with dedicated database & `pgvector` RAG.
+- **n8n Workflow Automation** (`modules/tenant`): Schema-isolated workflow automation engine with AES-256 encrypted credential vaults.
 
 ---
 
@@ -363,26 +374,25 @@ make cost
 
 ---
 
-## 🗺️ Roadmap: The Path to Workload Adapters
+## 🗺️ Roadmap: The Universal Container Platform
 
-TryBase is evolving from an n8n orchestrator into a universal multi-tenant platform for self-hosted apps and AI workflows:
+TryBase is building the ultimate open-source platform for multi-tenant container fleets and AI workloads:
 
-### 1. Workload Adapter Evolution
-- [x] **Flagship n8n Workload**: Production-hardened with Postgres schema scoping, unique encryption keys, and Resend SMTP.
-- [x] **Generic Container Module** (`modules/generic-workload`): Deploy any arbitrary Docker container (APIs, microservices, hello-world) with private Fargate isolation and ALB host routing.
+### 1. Workload Orchestration
+- [x] **Universal Container Module** (`modules/generic-workload`): Deploy any arbitrary Docker container (custom Python AI agents, CrewAI, AutoGen, microservices) with private Fargate microVM isolation and ALB host routing.
 - [x] **Multi-Database & `pgvector` Provisioning**: RDS Lambda dual-mode orchestrator supporting *Schema-per-tenant* (`CREATE SCHEMA`) and *Database-per-tenant* (`CREATE DATABASE`) with native `vector` extension setup.
-- [x] **Integrated Web Monorepo (`web/` & `make web`)**: Vite/React dashboard with AI Engine selection (n8n vs Dify), real-time Step Function terminal logs, and customer self-service.
-- [ ] **Curated Workload Adapters**:
-  - **Dify**: Enterprise self-hosted LLM application and multi-agent platform with native `pgvector` memory (adapter template in `terraform/tenant_dify.tf.example`).
-  - **Langflow**: Multi-agent visual workflow orchestrator.
-  - **Activepieces**: Lightweight open-source automation runner.
+- [x] **Integrated Web Monorepo (`web/` & `make web`)**: Vite/React dashboard with workload selection, real-time Step Function terminal logs, and customer self-service.
+- [x] **Production Starter Adapters**:
+  - **n8n Workflow Engine**: Hardened with Postgres schema scoping, unique encryption keys, and Resend SMTP.
+  - **Dify AI Studio**: Enterprise multi-agent platform with dedicated database and native `pgvector` RAG (`terraform/tenant_dify.tf.example`).
+- [ ] **Langflow Adapter**: Visual agent workflow runner.
+- [ ] **Custom Container Image Registry**: Direct pull integration with private ECR and Docker Hub secrets.
 
-### 2. Platform Capabilities
+### 2. Platform & FinOps Capabilities
 - [x] **Infracost Integration (`make cost`)**: Forecast exact monthly infrastructure and tenant costs via open-source Infracost.
-- [ ] **Container Auto-Idling**: Automatically scale down inactive tenant Fargate tasks to 0 and wake on incoming HTTP webhooks (drastically reducing idle compute bills).
-- [ ] **Custom Domain Support**: Allow tenants to bring their own apex domains via CNAME with automated ACM SSL issuance.
-- [ ] **Stripe Usage Billing**: Meter execution events and sync billing overages to Stripe subscriptions.
-- [ ] **AI Assistant Gateway**: Centralized proxy for tenant OpenAI/Anthropic credentials and token metering.
+- [ ] **Container Auto-Idling (Scale-to-Zero)**: Automatically scale down inactive tenant Fargate tasks to 0 and wake on incoming HTTP webhooks (slashing compute bills by up to 80%).
+- [ ] **Custom Domain Management**: Allow tenants to bring their own apex domains via CNAME with automated ACM SSL issuance.
+- [ ] **Multi-Cloud Adapters**: Google Cloud (Cloud Run + Cloud SQL) and Azure (Container Apps).
 
 ---
 
