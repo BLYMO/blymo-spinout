@@ -68,17 +68,23 @@ variable "cors_allowed_origins" {
 variable "enable_bastion" {
   description = "Whether to create the EC2 Bastion host for private RDS debugging"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "bastion_key_name" {
   description = "Name of the EC2 Key Pair used to SSH into the Bastion jump host"
   type        = string
-  default     = "opschimp"
+  default     = ""
 }
 
 variable "bastion_allowed_cidr" {
   description = "CIDR block permitted to connect to the Bastion host via SSH (port 22)"
   type        = string
-  default     = "5.71.146.123/32"
+  default     = "0.0.0.0/0"
+}
+
+variable "rds_skip_final_snapshot" {
+  description = "Skip final DB snapshot when destroying RDS (recommended true for development/testing teardowns)"
+  type        = bool
+  default     = true
 }

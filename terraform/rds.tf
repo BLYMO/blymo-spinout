@@ -88,7 +88,7 @@ resource "aws_db_instance" "main" {
   parameter_group_name   = aws_db_parameter_group.main.name
   publicly_accessible    = false # Important for security
   apply_immediately      = true  # Force architectural changes to happen now, not during the next maintenance window
-  backup_retention_period = 7
-  skip_final_snapshot     = false
-  final_snapshot_identifier = "n8n-hosting-final-snapshot"
+  backup_retention_period   = 7
+  skip_final_snapshot       = var.rds_skip_final_snapshot
+  final_snapshot_identifier = var.rds_skip_final_snapshot ? null : "n8n-hosting-final-${formatdate("YYYYMMDDhhmmss", timestamp())}"
 }
