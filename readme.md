@@ -345,6 +345,12 @@ ssh -i ~/.ssh/your-key.pem ec2-user@<BASTION_IP>
 PGPASSWORD='<PASSWORD>' PGSSLMODE=require psql -h <DB_HOSTNAME> -U n8nmaster -d postgres
 ```
 
+### Forecasting Cloud Costs with Infracost
+TryBase integrates with [Infracost](https://www.infracost.io/) (Apache 2.0) to forecast monthly AWS and multi-cloud fleet expenses before applying changes:
+```bash
+make cost
+```
+
 ---
 
 ## 🗺️ Roadmap: The Path to Workload Adapters
@@ -356,12 +362,12 @@ TryBase is evolving from an n8n orchestrator into a universal multi-tenant platf
 - [x] **Generic Container Module** (`modules/generic-workload`): Deploy any arbitrary Docker container (APIs, microservices, hello-world) with private Fargate isolation and ALB host routing.
 - [ ] **Multi-Database Provisioning**: Extend the DB Lambda to support both *Schema-per-tenant* (`CREATE SCHEMA`) and *Database-per-tenant* (`CREATE DATABASE`) for workloads requiring their own independent databases.
 - [ ] **Curated Workload Adapters**:
-  - **Flowise**: Multi-tenant LLM agents and LangChain flows with sandbox memory.
+  - **Dify**: Enterprise self-hosted LLM application and multi-agent platform with native `pgvector` memory.
   - **Langflow**: Multi-agent visual workflow orchestrator.
-  - **Dify**: Self-hosted LLM application platform.
   - **Activepieces**: Lightweight open-source automation runner.
 
 ### 2. Platform Capabilities
+- [x] **Infracost Integration (`make cost`)**: Forecast exact monthly infrastructure and tenant costs via open-source Infracost.
 - [ ] **Container Auto-Idling**: Automatically scale down inactive tenant Fargate tasks to 0 and wake on incoming HTTP webhooks (drastically reducing idle compute bills).
 - [ ] **Custom Domain Support**: Allow tenants to bring their own apex domains via CNAME with automated ACM SSL issuance.
 - [ ] **Stripe Usage Billing**: Meter execution events and sync billing overages to Stripe subscriptions.
