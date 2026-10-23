@@ -21,7 +21,7 @@ destroy:
 
 cost:
 	@if command -v infracost >/dev/null 2>&1; then \
-		infracost scan --path terraform/; \
+		infracost breakdown --path terraform/; \
 	else \
 		echo "\n\033[1;33m⚠️  Infracost is not installed.\033[0m"; \
 		echo "Install Infracost (Apache 2.0) to forecast exact cloud costs:"; \
