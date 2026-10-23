@@ -89,3 +89,24 @@ variable "alb_listener_rule_priority" {
   description = "Unique priority for the ALB listener rule (1-50000)."
   type        = number
 }
+
+# --- AI & Bedrock Gateway Bindings ---
+
+variable "enable_bedrock" {
+  description = "Attach an IAM policy allowing the container to invoke Amazon Bedrock foundation models keylessly."
+  type        = bool
+  default     = true
+}
+
+variable "bedrock_model_arns" {
+  description = "List of Bedrock foundation model ARNs the container is permitted to invoke. Defaults to all models."
+  type        = list(string)
+  default     = ["*"]
+}
+
+variable "bedrock_guardrail_arn" {
+  description = "Optional ARN or identifier for an Amazon Bedrock Guardrail to enforce content filtering and PII masking."
+  type        = string
+  default     = ""
+}
+

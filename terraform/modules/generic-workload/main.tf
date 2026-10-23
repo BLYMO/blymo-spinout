@@ -71,6 +71,44 @@ resource "aws_iam_role" "task_role" {
   })
 }
 
+resource "aws_iam_policy" "bedrock_access" {
+  count       = var.enable_bedrock ? 1 : 0
+  name        = "trybase-${var.service_name}-bedrock"
+  description = "Allows tenant workload '${var.service_name}' to invoke Amazon Bedrock foundation models keylessly"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = concat(
+      [
+        {
+          Sid    = "BedrockModelInvocation"
+          Effect = "Allow"
+          Action = [
+            "bedrock:InvokeModel",
+            "bedrock:InvokeModelWithResponseStream"
+          ]
+          Resource = var.bedrock_model_arns
+        }
+      ],
+      var.bedrock_guardrail_arn != "" ? [
+        {
+          Sid      = "BedrockGuardrailEnforcement"
+          Effect   = "Allow"
+          Action   = ["bedrock:ApplyGuardrail"]
+          Resource = [var.bedrock_guardrail_arn]
+        }
+      ] : []
+    )
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "bedrock_access" {
+  count      = var.enable_bedrock ? 1 : 0
+  role       = aws_iam_role.task_role.name
+  policy_arn = aws_iam_policy.bedrock_access[0].arn
+}
+
+
 # ------------------------------------------------------------------------------
 # ECS Task Definition & Service
 # ------------------------------------------------------------------------------
@@ -152,11 +190,11 @@ resource "aws_ecs_service" "service" {
 # ------------------------------------------------------------------------------
 
 resource "aws_lb_target_group" "service" {
-  name        = "tg-${substr(var.service_name, 0, 28)}"
-  port        = var.container_port
-  protocol    = "HTTP"
-  vpc_id      = var.vpc_id
-  target_type = "ip"
+  name                 = "tg-${substr(var.service_name, 0, 28)}"
+  port                 = var.container_port
+  protocol             = "HTTP"
+  vpc_id               = var.vpc_id
+  target_type          = "ip"
   deregistration_delay = 15
 
   health_check {
