@@ -48,3 +48,12 @@ terraform/tenant_*.tf
 *.png
 response.json
 terraform/response.json
+
+# Web Frontend
+web/node_modules/
+web/dist/
+web/.env
+web/.env.local
+web/.env.*.local
+!web/.env.example
+

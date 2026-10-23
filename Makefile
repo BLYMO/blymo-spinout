@@ -1,9 +1,10 @@
-.PHONY: all control-plane infra destroy cost sync clean help
+.PHONY: all control-plane infra web destroy cost sync clean help
 
 help:
 	@echo "TryBase CLI Commands:"
 	@echo "  make control-plane  Deploy Supabase migrations & Edge Functions (Command 1/2)"
 	@echo "  make infra          Deploy AWS Fleet with Terraform (Command 2/2)"
+	@echo "  make web            Start the local React web dashboard (UI)"
 	@echo "  make cost           Forecast cloud infrastructure costs with Infracost"
 	@echo "  make destroy        Tear down AWS Fleet infrastructure cleanly"
 	@echo "  make all            Deploy both Control Plane and AWS Fleet"
@@ -15,6 +16,10 @@ control-plane:
 
 infra:
 	@./deploy-infra.sh
+
+web:
+	@echo "Starting TryBase Web Dashboard..."
+	@cd web && npm install && npm run dev
 
 destroy:
 	@./destroy-infra.sh

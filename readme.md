@@ -196,7 +196,15 @@ Add a single **Wildcard CNAME**:
 | :--- | :--- | :--- |
 | **CNAME** | `*.n8n` *(or `*` if using apex)* | `<alb_dns_name>` |
 
-🎉 **That's it!** Your entire platform is live. You can immediately provision tenants via the API or GitOps.
+---
+
+### 4️⃣ Launch the Web Dashboard (UI)
+```bash
+make web
+```
+Spins up the integrated React/Vite dashboard locally with interactive provisioning, real-time terminal logs, and multi-engine selection (n8n Automation & Dify AI Studio).
+
+🎉 **That's it!** Your entire platform is live. You can immediately provision tenants via the UI, API, or GitOps.
 
 ---
 
@@ -362,9 +370,10 @@ TryBase is evolving from an n8n orchestrator into a universal multi-tenant platf
 ### 1. Workload Adapter Evolution
 - [x] **Flagship n8n Workload**: Production-hardened with Postgres schema scoping, unique encryption keys, and Resend SMTP.
 - [x] **Generic Container Module** (`modules/generic-workload`): Deploy any arbitrary Docker container (APIs, microservices, hello-world) with private Fargate isolation and ALB host routing.
-- [ ] **Multi-Database Provisioning**: Extend the DB Lambda to support both *Schema-per-tenant* (`CREATE SCHEMA`) and *Database-per-tenant* (`CREATE DATABASE`) for workloads requiring their own independent databases.
+- [x] **Multi-Database & `pgvector` Provisioning**: RDS Lambda dual-mode orchestrator supporting *Schema-per-tenant* (`CREATE SCHEMA`) and *Database-per-tenant* (`CREATE DATABASE`) with native `vector` extension setup.
+- [x] **Integrated Web Monorepo (`web/` & `make web`)**: Vite/React dashboard with AI Engine selection (n8n vs Dify), real-time Step Function terminal logs, and customer self-service.
 - [ ] **Curated Workload Adapters**:
-  - **Dify**: Enterprise self-hosted LLM application and multi-agent platform with native `pgvector` memory.
+  - **Dify**: Enterprise self-hosted LLM application and multi-agent platform with native `pgvector` memory (adapter template in `terraform/tenant_dify.tf.example`).
   - **Langflow**: Multi-agent visual workflow orchestrator.
   - **Activepieces**: Lightweight open-source automation runner.
 
