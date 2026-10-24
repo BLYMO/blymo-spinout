@@ -51,8 +51,8 @@ resource "aws_iam_role_policy" "sfn_lambda" {
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Effect   = "Allow"
-      Action   = ["lambda:InvokeFunction"]
+      Effect = "Allow"
+      Action = ["lambda:InvokeFunction"]
       Resource = [
         aws_lambda_function.create_schema.arn,
         aws_lambda_function.notify_success.arn
@@ -128,10 +128,29 @@ resource "aws_sfn_state_machine" "provision_tenant" {
   # Uses the optimised integration pattern for CodeBuild (.sync:2)
   # which automatically polls until the build is complete.
   definition = jsonencode({
-    Comment = "Provision a new n8n tenant: run Terraform, then create DB schema"
-    StartAt = "ProvisionInfrastructure"
+    Comment = "Provision a new tenant: run Terraform via CodeBuild, then create DB schema/database"
+    StartAt = "CheckWorkloadType"
 
     States = {
+      CheckWorkloadType = {
+        Type = "Choice"
+        Choices = [
+          {
+            Variable  = "$.workload_type"
+            IsPresent = true
+            Next      = "ProvisionInfrastructure"
+          }
+        ]
+        Default = "SetDefaultWorkloadType"
+      }
+
+      SetDefaultWorkloadType = {
+        Type       = "Pass"
+        Result     = "n8n"
+        ResultPath = "$.workload_type"
+        Next       = "ProvisionInfrastructure"
+      }
+
       ProvisionInfrastructure = {
         Type     = "Task"
         Resource = "arn:aws:states:::codebuild:startBuild.sync"
@@ -146,6 +165,11 @@ resource "aws_sfn_state_machine" "provision_tenant" {
             {
               Name      = "ALB_LISTENER_RULE_PRIORITY"
               "Value.$" = "States.Format('{}', $.alb_listener_rule_priority)"
+              Type      = "PLAINTEXT"
+            },
+            {
+              Name      = "WORKLOAD_TYPE"
+              "Value.$" = "$.workload_type"
               Type      = "PLAINTEXT"
             }
           ]
@@ -165,7 +189,8 @@ resource "aws_sfn_state_machine" "provision_tenant" {
         Parameters = {
           FunctionName = aws_lambda_function.create_schema.arn
           Payload = {
-            "tenant_id.$" = "$.tenant_id"
+            "tenant_id.$"     = "$.tenant_id"
+            "workload_type.$" = "$.workload_type"
           }
         }
         ResultPath = "$.schema_result"
@@ -189,7 +214,8 @@ resource "aws_sfn_state_machine" "provision_tenant" {
         Parameters = {
           FunctionName = aws_lambda_function.notify_success.arn
           Payload = {
-            "tenant_id.$" = "$.tenant_id"
+            "tenant_id.$"     = "$.tenant_id"
+            "workload_type.$" = "$.workload_type"
           }
         }
         ResultPath = "$.notify_result"
@@ -202,8 +228,8 @@ resource "aws_sfn_state_machine" "provision_tenant" {
         }]
         Catch = [{
           ErrorEquals = ["States.ALL"]
-          Next        = "ProvisioningFailed"
-          ResultPath  = "$.error"
+          Next        = "ProvisioningComplete"
+          ResultPath  = "$.notify_error"
         }]
       }
 

@@ -9,8 +9,8 @@ data "archive_file" "authorizer_zip" {
 
 # 2. Secret for Supabase JWT Key
 resource "aws_secretsmanager_secret" "supabase_jwt_secret" {
-  name        = "n8n-hosting/supabase-jwt-secret"
-  description = "Supabase JWT secret for custom Lambda authorizer"
+  name                    = "n8n-hosting/supabase-jwt-secret"
+  description             = "Supabase JWT secret for custom Lambda authorizer"
   recovery_window_in_days = 0
 }
 

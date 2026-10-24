@@ -66,7 +66,7 @@ resource "aws_apigatewayv2_stage" "default" {
 
   access_log_settings {
     destination_arn = aws_cloudwatch_log_group.apigw.arn
-    format          = jsonencode({
+    format = jsonencode({
       requestId      = "$context.requestId"
       sourceIp       = "$context.identity.sourceIp"
       requestTime    = "$context.requestTime"
@@ -92,10 +92,10 @@ resource "aws_cloudwatch_log_group" "apigw" {
 # ------------------------------------------------------------------------------
 
 resource "aws_apigatewayv2_integration" "provision" {
-  api_id             = aws_apigatewayv2_api.main.id
-  integration_type   = "AWS_PROXY"
+  api_id              = aws_apigatewayv2_api.main.id
+  integration_type    = "AWS_PROXY"
   integration_subtype = "StepFunctions-StartExecution"
-  credentials_arn    = aws_iam_role.apigw_sfn.arn
+  credentials_arn     = aws_iam_role.apigw_sfn.arn
 
   # Map the incoming JSON body directly as the Step Function input
   request_parameters = {
@@ -110,7 +110,7 @@ resource "aws_apigatewayv2_route" "provision" {
   api_id    = aws_apigatewayv2_api.main.id
   route_key = "POST /provision"
   target    = "integrations/${aws_apigatewayv2_integration.provision.id}"
-  
+
   authorization_type = "CUSTOM"
   authorizer_id      = aws_apigatewayv2_authorizer.supabase_custom.id
 }

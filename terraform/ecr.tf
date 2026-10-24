@@ -12,9 +12,9 @@ resource "aws_ecr_repository" "create_schema_lambda" {
 # Automatically build and push the create-schema Lambda container image
 resource "null_resource" "build_create_schema_lambda" {
   triggers = {
-    dockerfile_sha   = filesha256("${path.module}/../lambda/create-schema/Dockerfile")
-    handler_sha      = filesha256("${path.module}/../lambda/create-schema/main.py")
-    requirements_sha = filesha256("${path.module}/../lambda/create-schema/requirements.txt")
+    dockerfile_sha   = fileexists("${path.module}/../lambda/create-schema/Dockerfile") ? filesha256("${path.module}/../lambda/create-schema/Dockerfile") : "remote"
+    handler_sha      = fileexists("${path.module}/../lambda/create-schema/main.py") ? filesha256("${path.module}/../lambda/create-schema/main.py") : "remote"
+    requirements_sha = fileexists("${path.module}/../lambda/create-schema/requirements.txt") ? filesha256("${path.module}/../lambda/create-schema/requirements.txt") : "remote"
   }
 
   provisioner "local-exec" {

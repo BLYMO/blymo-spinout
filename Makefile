@@ -1,4 +1,4 @@
-.PHONY: all control-plane infra web destroy cost sync clean help
+.PHONY: all control-plane infra web destroy cost sync clean test-provision help
 
 help:
 	@echo "TryBase CLI Commands:"
@@ -9,6 +9,7 @@ help:
 	@echo "  make destroy        Tear down AWS Fleet infrastructure cleanly"
 	@echo "  make all            Deploy both Control Plane and AWS Fleet"
 	@echo "  make sync           Sync remote tenant state from S3 to local Git"
+	@echo "  make test-provision Test provisioning workloads (WORKLOAD=hello|n8n|dify|agent|all)"
 	@echo "  make clean          Clean orphaned AWS Lambda ENIs"
 
 control-plane:
@@ -39,6 +40,9 @@ all: control-plane infra
 
 sync:
 	@./sync-tenants.sh
+
+test-provision:
+	@./tests/test_api_provisioning.sh $(WORKLOAD)
 
 clean:
 	@./cleanup-enis.sh

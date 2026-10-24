@@ -6,10 +6,10 @@
 resource "aws_iam_role" "create_schema_lambda" {
   name = "n8n-create-schema-lambda-role"
   assume_role_policy = jsonencode({
-    Version   = "2012-10-17"
+    Version = "2012-10-17"
     Statement = [{
-      Action    = "sts:AssumeRole"
-      Effect    = "Allow"
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
       Principal = {
         Service = "lambda.amazonaws.com"
       }
@@ -25,9 +25,9 @@ resource "aws_iam_role_policy_attachment" "lambda_vpc_access" {
 
 # Grant the Lambda permission to read our specific database secret
 resource "aws_iam_policy" "lambda_read_db_secret" {
-  name   = "n8n-lambda-read-db-secret-policy"
+  name = "n8n-lambda-read-db-secret-policy"
   policy = jsonencode({
-    Version   = "2012-10-17"
+    Version = "2012-10-17"
     Statement = [{
       Action   = "secretsmanager:GetSecretValue"
       Effect   = "Allow"
@@ -94,7 +94,7 @@ resource "aws_lambda_function" "create_schema" {
 resource "aws_iam_role" "notify_success_lambda" {
   name = "n8n-notify-success-lambda-role"
   assume_role_policy = jsonencode({
-    Version   = "2012-10-17"
+    Version = "2012-10-17"
     Statement = [{
       Action    = "sts:AssumeRole"
       Effect    = "Allow"
@@ -150,22 +150,31 @@ data "archive_file" "notify_success_zip" {
       export const handler = async (event) => {
         console.log("Notifying Supabase of success for tenant:", event.tenant_id);
 
-        // Fetch the Supabase service role key at runtime from Secrets Manager
-        const { SecretString } = await sm.send(
-          new GetSecretValueCommand({ SecretId: process.env.SUPABASE_SERVICE_ROLE_KEY_ARN })
-        );
+        try {
+          // Fetch the Supabase service role key at runtime from Secrets Manager
+          const { SecretString } = await sm.send(
+            new GetSecretValueCommand({ SecretId: process.env.SUPABASE_SERVICE_ROLE_KEY_ARN })
+          );
 
-        const res = await fetch(`${var.supabase_url}/functions/v1/on-provision-success`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer $${SecretString}`
-          },
-          body: JSON.stringify({ tenant_id: event.tenant_id })
-        });
+          const res = await fetch(`${var.supabase_url}/functions/v1/on-provision-success`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer $${SecretString}`
+            },
+            body: JSON.stringify({ tenant_id: event.tenant_id, workload_type: event.workload_type })
+          });
 
-        if (!res.ok) throw new Error("Supabase callback failed: " + await res.text());
-        return { success: true };
+          if (!res.ok) {
+            const errText = await res.text();
+            console.warn("Supabase callback returned non-OK (" + res.status + "): " + errText);
+            return { success: false, warning: errText };
+          }
+          return { success: true };
+        } catch (err) {
+          console.warn("Non-fatal notify_success warning:", err.message);
+          return { success: false, warning: err.message };
+        }
       };
     EOF
     filename = "index.mjs"
