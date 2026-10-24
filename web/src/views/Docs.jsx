@@ -612,6 +612,137 @@ app.post("/chat", async (req, res) => {
             </article>
           )}
 
+          {/* SECTION: ADAPTERS & REDIS ARCHITECTURE */}
+          {activeSection === 'adapters' && (
+            <article>
+              <span style={{ background: '#e0e7ff', color: '#4338ca', padding: '0.2rem 0.6rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 700 }}>
+                EXTENSIBILITY & ADAPTERS
+              </span>
+              <h1 style={{ fontSize: '2.5rem', fontWeight: 800, letterSpacing: '-0.03em', color: '#0f172a', marginTop: '0.5rem', marginBottom: '1rem' }}>
+                Workload Adapters & Redis Caching
+              </h1>
+              <p style={{ fontSize: '1.15rem', color: '#475569', lineHeight: 1.6, marginBottom: '2rem' }}>
+                The open-source specification for packaging AI agent studios (Dify, n8n, Langflow) with hardware isolation, zero-cost Redis sidecars, and scoped database security.
+              </p>
+
+              <h2 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#0f172a', marginTop: '2rem', marginBottom: '1rem' }}>
+                What is a TryBase Adapter?
+              </h2>
+              <p style={{ color: '#334155', lineHeight: 1.7, marginBottom: '1.5rem' }}>
+                A <strong>Workload Adapter</strong> is a declarative Terraform specification that packages an autonomous runtime or visual AI studio and hooks it into TryBase's multi-tenant hyperscaler fabric. Instead of managing separate clusters, virtual networks, or load balancers for each framework, an adapter standardizes four core contracts:
+              </p>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', marginBottom: '2.5rem' }}>
+                <div style={{ padding: '1.25rem', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#f8fafc' }}>
+                  <div style={{ fontWeight: 700, color: '#0f172a', marginBottom: '0.35rem' }}>1. Compute Hypervisor</div>
+                  <div style={{ fontSize: '0.85rem', color: '#64748b' }}>Dedicated AWS Fargate Graviton ARM64 MicroVM with per-second billing.</div>
+                </div>
+                <div style={{ padding: '1.25rem', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#f8fafc' }}>
+                  <div style={{ fontWeight: 700, color: '#0f172a', marginBottom: '0.35rem' }}>2. Traffic Ingress</div>
+                  <div style={{ fontSize: '0.85rem', color: '#64748b' }}>Automatic Host-header routing rule and target group on the shared ALB.</div>
+                </div>
+                <div style={{ padding: '1.25rem', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#f8fafc' }}>
+                  <div style={{ fontWeight: 700, color: '#0f172a', marginBottom: '0.35rem' }}>3. Vector Memory</div>
+                  <div style={{ fontSize: '0.85rem', color: '#64748b' }}>Dedicated schema or database on Graviton RDS with native pgvector enabled.</div>
+                </div>
+                <div style={{ padding: '1.25rem', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#f8fafc' }}>
+                  <div style={{ fontWeight: 700, color: '#0f172a', marginBottom: '0.35rem' }}>4. In-Task Caching</div>
+                  <div style={{ fontSize: '0.85rem', color: '#64748b' }}>Zero-cost local Redis sidecar container sharing the task loopback interface.</div>
+                </div>
+              </div>
+
+              <h2 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#0f172a', marginTop: '2.5rem', marginBottom: '1rem' }}>
+                The Redis Sidecar Architecture
+              </h2>
+              <p style={{ color: '#334155', lineHeight: 1.7, marginBottom: '1.5rem' }}>
+                Most modern AI agent platforms (like Dify for Celery worker queues or LangChain for memory buffers) require Redis. Traditional cloud setups deploy a shared AWS ElastiCache cluster, which adds ~$20-$40/month of standing idle costs and creates cross-tenant cache collision risks.
+              </p>
+              <p style={{ color: '#334155', lineHeight: 1.7, marginBottom: '1.5rem' }}>
+                TryBase uses the <strong>Container Sidecar Pattern</strong>. Because AWS Fargate operates in <code style={{ color: '#2563eb' }}>awsvpc</code> network mode, all containers within a single task share the exact same network namespace and localhost loopback interface:
+              </p>
+
+              <div style={{ background: '#0f172a', borderRadius: '8px', padding: '1.25rem', fontFamily: 'monospace', fontSize: '0.82rem', color: '#f8fafc', marginBottom: '2rem', lineHeight: 1.6 }}>
+                <div style={{ color: '#38bdf8' }}>// Inside Fargate MicroVM (Tenant Task)</div>
+                <div style={{ color: '#94a3b8' }}>┌────────────────────────────────────────────────────────┐</div>
+                <div style={{ color: '#94a3b8' }}>│  Fargate Network Namespace (10.0.2.x)                  │</div>
+                <div style={{ color: '#94a3b8' }}>│                                                        │</div>
+                <div>│  [ Application Container: Dify API / Langflow ]        │</div>
+                <div>│       │                                                │</div>
+                <div>│       ├── connects to "127.0.0.1:6379" (0.05ms)        │</div>
+                <div>│       ▼                                                │</div>
+                <div>│  [ Sidecar Container: redis:alpine (128MB RAM) ]      │</div>
+                <div style={{ color: '#94a3b8' }}>└────────────────────────────────────────────────────────┘</div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.25rem', marginBottom: '2rem' }}>
+                <div style={{ padding: '1.25rem', borderRadius: '8px', border: '1px solid #bbf7d0', background: '#f0fdf4' }}>
+                  <h4 style={{ color: '#15803d', fontWeight: 700, margin: '0 0 0.5rem 0' }}>Zero Infrastructure Cost</h4>
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#166534' }}>
+                    Redis runs inside the container's allocated memory. No ElastiCache cluster fees, no VPC peering costs, and no idle tax.
+                  </p>
+                </div>
+                <div style={{ padding: '1.25rem', borderRadius: '8px', border: '1px solid #bbf7d0', background: '#f0fdf4' }}>
+                  <h4 style={{ color: '#15803d', fontWeight: 700, margin: '0 0 0.5rem 0' }}>Physical Cache Isolation</h4>
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#166534' }}>
+                    Tenant A's Redis instance is physically sandboxed inside their microVM cgroup. Tenant B cannot read or corrupt their cache.
+                  </p>
+                </div>
+              </div>
+
+              <h2 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#0f172a', marginTop: '2.5rem', marginBottom: '1rem' }}>
+                The Scoped Database Security Standard
+              </h2>
+              <p style={{ color: '#334155', lineHeight: 1.7, marginBottom: '1rem' }}>
+                A foundational security rule in TryBase: <strong>Application containers must never receive the RDS master password.</strong>
+              </p>
+              <p style={{ color: '#334155', lineHeight: 1.7, marginBottom: '1.5rem' }}>
+                To maintain zero-trust boundaries across shared databases:
+              </p>
+              <ol style={{ paddingLeft: '1.25rem', color: '#334155', display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '2rem' }}>
+                <li>
+                  <strong>2-Second Bootstrap Lambda:</strong> The <code style={{ color: '#2563eb' }}>create-schema</code> Lambda is the only entity with temporary access to the master RDS credentials.
+                </li>
+                <li>
+                  <strong>Per-Tenant User Minting:</strong> For dedicated database workloads (like Dify), the Lambda creates a scoped user <code style={{ color: '#2563eb' }}>user_tenant_slug</code> with a cryptographically random password.
+                </li>
+                <li>
+                  <strong>Strict Privileges:</strong> Permissions are granted exclusively to <code style={{ color: '#2563eb' }}>db_tenant_slug</code>. The user cannot view the Postgres catalog, read n8n schemas, or query other databases.
+                </li>
+                <li>
+                  <strong>Secrets Manager Storage:</strong> Scoped credentials are stored in Secrets Manager and mounted directly into the Fargate task definition.
+                </li>
+              </ol>
+
+              <h2 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#0f172a', marginTop: '2.5rem', marginBottom: '1rem' }}>
+                Contributing a New Adapter
+              </h2>
+              <p style={{ color: '#334155', lineHeight: 1.7, marginBottom: '1.5rem' }}>
+                We welcome open-source contributions of adapters for popular agent frameworks (Langflow, AutoGen, CrewAI, Flowise). Adding an adapter to TryBase requires three files:
+              </p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2.5rem' }}>
+                <div style={{ padding: '1rem', border: '1px solid #e2e8f0', borderRadius: '8px', background: '#f8fafc' }}>
+                  <div style={{ fontWeight: 700, color: '#0f172a', marginBottom: '0.25rem' }}>Step 1: Module Definition</div>
+                  <div style={{ fontSize: '0.88rem', color: '#475569' }}>
+                    Create or extend <code style={{ color: '#2563eb' }}>terraform/modules/generic-workload</code> with your framework's container image, internal port, and health check path.
+                  </div>
+                </div>
+                <div style={{ padding: '1rem', border: '1px solid #e2e8f0', borderRadius: '8px', background: '#f8fafc' }}>
+                  <div style={{ fontWeight: 700, color: '#0f172a', marginBottom: '0.25rem' }}>Step 2: Environment Wiring</div>
+                  <div style={{ fontSize: '0.88rem', color: '#475569' }}>
+                    Bind the database connection string, vector store (<code style={{ color: '#2563eb' }}>pgvector</code>), and Redis sidecar host (<code style={{ color: '#2563eb' }}>127.0.0.1:6379</code>).
+                  </div>
+                </div>
+                <div style={{ padding: '1rem', border: '1px solid #e2e8f0', borderRadius: '8px', background: '#f8fafc' }}>
+                  <div style={{ fontWeight: 700, color: '#0f172a', marginBottom: '0.25rem' }}>Step 3: Verification Test</div>
+                  <div style={{ fontSize: '0.88rem', color: '#475569' }}>
+                    Add an automated test case to <code style={{ color: '#2563eb' }}>tests/test_api_provisioning.sh</code> and verify that <code style={{ color: '#2563eb' }}>make test-provision WORKLOAD=your_adapter</code> returns HTTP 200.
+                  </div>
+                </div>
+              </div>
+            </article>
+          )}
+
           {/* SECTION 6: FINOPS */}
           {activeSection === 'finops' && (
             <article>
@@ -694,7 +825,7 @@ app.post("/chat", async (req, res) => {
           )}
 
           {/* FALLBACK FOR OTHER SECTIONS */}
-          {!['overview', 'quickstart', 'keyless-sts', 'task-roles', 'writing-agents', 'finops', 'cli-cheatsheet'].includes(activeSection) && (
+          {!['overview', 'quickstart', 'keyless-sts', 'task-roles', 'writing-agents', 'adapters', 'finops', 'cli-cheatsheet'].includes(activeSection) && (
             <article>
               <h1 style={{ fontSize: '2.5rem', fontWeight: 800, letterSpacing: '-0.03em', color: '#0f172a', marginBottom: '1rem' }}>
                 {DOC_SECTIONS.flatMap(g => g.items).find(i => i.id === activeSection)?.title || 'Documentation'}

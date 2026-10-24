@@ -118,3 +118,22 @@ graph TD
   2. **Security Isolation**: Kubernetes pods share a common Linux kernel on the node. Fargate runs every task within an independent **AWS Firecracker MicroVM**, eliminating noisy-neighbor vulnerabilities and cross-tenant memory leakage.
   3. **Zero Maintenance Burden**: Kubernetes requires frequent cluster and API upgrades, CNI/CSI driver lifecycle management, and ingress controller tuning. Fargate is fully serverless and transparently maintained by AWS.
   4. **Native ALB Host Routing**: ECS target groups integrate natively with ALB listener rules, eliminating the need for ingress controllers like Traefik or NGINX.
+
+### ADR-002: In-Task Redis Sidecars vs. Shared ElastiCache for Multi-Tenant Caching
+
+* **Status**: Accepted
+* **Context**: Modern AI agent platforms (e.g. Dify for Celery worker queues, LangChain for memory buffers) require Redis caching.
+* **Decision**: We chose **In-Task Redis Sidecar Containers** running alongside the application in the same ECS Fargate task (`enable_redis = true`).
+* **Rationale & Trade-Offs**:
+  1. **Zero Standing Cost**: A managed AWS ElastiCache / Valkey cluster costs ~$15–$25/month even when idle. The sidecar pattern consumes ~128MB from the task's existing memory allocation with $0 added cloud spend.
+  2. **Microsecond Latency**: Containers in `awsvpc` network mode communicate across `localhost` (`127.0.0.1:6379`), eliminating VPC network hops.
+  3. **Strict Physical Isolation**: Tenant A's Redis cache is physically inaccessible to Tenant B because it runs inside their private Firecracker MicroVM cgroup.
+
+### ADR-003: Scoped Database Roles vs. Master Credential Delegation
+
+* **Status**: Accepted
+* **Context**: Application containers require database access, but delegating the master RDS credentials (`n8nmaster`) exposes the entire cluster to compromise.
+* **Decision**: Application containers **must never receive master credentials**. The `create-schema` Lambda mints scoped tenant users (`user_<tenant_id>`) with isolated database privileges.
+* **Rationale & Trade-Offs**:
+  1. **Least Privilege**: If an application container (Dify, n8n) is exploited via a plugin or remote code execution, the attacker is strictly confined to `db_<tenant_id>` and cannot read other tenants' data or catalog tables.
+  2. **Short-Lived Elevation**: The master database password is only accessed for ~2 seconds inside the private VPC by the ephemeral `create-schema` Lambda.
