@@ -110,3 +110,11 @@ variable "bedrock_guardrail_arn" {
   default     = ""
 }
 
+# --- Caching & Sidecars ---
+
+variable "enable_redis" {
+  description = "Inject an in-task redis:alpine sidecar container sharing localhost:6379 for Celery and streaming cache."
+  type        = bool
+  default     = false
+}
+

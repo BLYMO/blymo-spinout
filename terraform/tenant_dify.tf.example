@@ -24,15 +24,17 @@ module "dify_acme" {
   health_check_path = "/healthz"
   cpu               = 1024 # 1.0 vCPU
   memory            = 2048 # 2048 MiB
+  enable_redis      = true # Injects a local redis:alpine sidecar on 127.0.0.1:6379 ($0 extra cost!)
 
-  # Environment configuration for Dify with RDS pgvector
+  # Environment configuration for Dify with RDS pgvector and Redis sidecar
   environment_variables = {
     MODE                   = "api"
     LOG_LEVEL              = "INFO"
     SECRET_KEY             = "trybase-dify-secret-key-change-in-production"
     
-    # Primary Database on TryBase Shared RDS
-    DB_USERNAME            = "n8nmaster"
+    # Scoped Database on TryBase Shared RDS (never shares master credentials)
+    DB_USERNAME            = "usr_dify_acme"
+    DB_PASSWORD            = "TryBaseDifySecurePass2026!"
     DB_HOST                = aws_db_instance.main.address
     DB_PORT                = "5432"
     DB_DATABASE            = "db_dify_acme"
@@ -41,8 +43,15 @@ module "dify_acme" {
     VECTOR_STORE           = "pgvector"
     PGVECTOR_HOST          = aws_db_instance.main.address
     PGVECTOR_PORT          = "5432"
-    PGVECTOR_USER          = "n8nmaster"
+    PGVECTOR_USER          = "usr_dify_acme"
+    PGVECTOR_PASSWORD      = "TryBaseDifySecurePass2026!"
     PGVECTOR_DATABASE      = "db_dify_acme"
+
+    # In-Task Redis Sidecar (ultra-low latency loopback)
+    REDIS_HOST             = "127.0.0.1"
+    REDIS_PORT             = "6379"
+    REDIS_DB               = "0"
+    CELERY_BROKER_URL      = "redis://127.0.0.1:6379/1"
   }
 
   # Bind to TryBase shared infrastructure

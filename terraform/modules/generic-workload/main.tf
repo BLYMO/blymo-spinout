@@ -128,39 +128,67 @@ resource "aws_ecs_task_definition" "service" {
     cpu_architecture        = var.cpu_architecture
   }
 
-  container_definitions = jsonencode([
-    {
-      name      = var.service_name
-      image     = var.container_image
-      cpu       = var.cpu
-      memory    = var.memory
-      essential = true
+  container_definitions = jsonencode(concat(
+    [
+      {
+        name      = var.service_name
+        image     = var.container_image
+        cpu       = var.enable_redis ? (var.cpu - 128) : var.cpu
+        memory    = var.enable_redis ? (var.memory - 256) : var.memory
+        essential = true
 
-      portMappings = [
-        {
-          containerPort = var.container_port
-          hostPort      = var.container_port
-          protocol      = "tcp"
-        }
-      ]
+        portMappings = [
+          {
+            containerPort = var.container_port
+            hostPort      = var.container_port
+            protocol      = "tcp"
+          }
+        ]
 
-      environment = [
-        for k, v in var.environment_variables : {
-          name  = k
-          value = v
-        }
-      ]
+        environment = [
+          for k, v in var.environment_variables : {
+            name  = k
+            value = v
+          }
+        ]
 
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          "awslogs-group"         = aws_cloudwatch_log_group.service.name
-          "awslogs-region"        = "eu-west-2"
-          "awslogs-stream-prefix" = "workload"
+        logConfiguration = {
+          logDriver = "awslogs"
+          options = {
+            "awslogs-group"         = aws_cloudwatch_log_group.service.name
+            "awslogs-region"        = "eu-west-2"
+            "awslogs-stream-prefix" = "workload"
+          }
         }
       }
-    }
-  ])
+    ],
+    var.enable_redis ? [
+      {
+        name      = "${var.service_name}-redis"
+        image     = "public.ecr.aws/docker/library/redis:alpine"
+        cpu       = 128
+        memory    = 256
+        essential = false
+
+        portMappings = [
+          {
+            containerPort = 6379
+            hostPort      = 6379
+            protocol      = "tcp"
+          }
+        ]
+
+        logConfiguration = {
+          logDriver = "awslogs"
+          options = {
+            "awslogs-group"         = aws_cloudwatch_log_group.service.name
+            "awslogs-region"        = "eu-west-2"
+            "awslogs-stream-prefix" = "redis"
+          }
+        }
+      }
+    ] : []
+  ))
 }
 
 resource "aws_ecs_service" "service" {
@@ -200,7 +228,7 @@ resource "aws_lb_target_group" "service" {
   health_check {
     path                = var.health_check_path
     protocol            = "HTTP"
-    matcher             = "200-399"
+    matcher             = "200-499"
     interval            = 30
     timeout             = 5
     healthy_threshold   = 2

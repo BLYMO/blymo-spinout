@@ -119,7 +119,7 @@ EOF
         HTTP_CODE="000"
         for i in {1..10}; do
             HTTP_CODE=$(curl -s -k -o /dev/null -w "%{http_code}" -H "Host: ${TENANT_ID}.${BASE_DOMAIN}" "https://${ALB_HOST}" 2>/dev/null || echo "000")
-            if [ "$HTTP_CODE" == "200" ] || [ "$HTTP_CODE" == "302" ] || [ "$HTTP_CODE" == "401" ]; then
+            if [[ "$HTTP_CODE" =~ ^[234] ]]; then
                 break
             fi
             sleep 5

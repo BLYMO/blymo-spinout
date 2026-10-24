@@ -81,14 +81,30 @@ def handler(event, context):
 
             if workload_type == "dify" or mode == "database":
                 db_name = f"db_{db_schema}"
+                db_user_scoped = f"usr_{db_schema}"
+                tenant_db_password = event.get('db_password', 'TryBaseDifySecurePass2026!')
+
+                # 1. Create scoped tenant database user if not exists
+                cursor.execute("SELECT 1 FROM pg_roles WHERE rolname = %s;", (db_user_scoped,))
+                if not cursor.fetchone():
+                    cursor.execute(f'CREATE USER "{db_user_scoped}" WITH PASSWORD %s;', (tenant_db_password,))
+                    logger.info(f"Successfully created scoped database user '{db_user_scoped}'")
+                else:
+                    cursor.execute(f'ALTER USER "{db_user_scoped}" WITH PASSWORD %s;', (tenant_db_password,))
+                    logger.info(f"Updated password for scoped user '{db_user_scoped}'")
+
+                # 2. Create dedicated database owned by the scoped user
                 cursor.execute("SELECT 1 FROM pg_database WHERE datname = %s;", (db_name,))
                 if not cursor.fetchone():
-                    cursor.execute(f'CREATE DATABASE "{db_name}";')
-                    logger.info(f"Successfully created dedicated database '{db_name}'")
+                    cursor.execute(f'CREATE DATABASE "{db_name}" OWNER "{db_user_scoped}";')
+                    logger.info(f"Successfully created dedicated database '{db_name}' owned by '{db_user_scoped}'")
                 else:
-                    logger.info(f"Database '{db_name}' already exists.")
+                    cursor.execute(f'ALTER DATABASE "{db_name}" OWNER TO "{db_user_scoped}";')
+                    logger.info(f"Database '{db_name}' already exists. Assigned ownership to '{db_user_scoped}'.")
                 
-                # Connect to the new database to enable pgvector for Dify RAG
+                cursor.execute(f'GRANT ALL PRIVILEGES ON DATABASE "{db_name}" TO "{db_user_scoped}";')
+                
+                # 3. Connect to the new database to enable pgvector for Dify RAG
                 try:
                     tenant_conn = psycopg2.connect(
                         host=db_host, port=db_port, user=db_user, password=db_password,
@@ -102,7 +118,7 @@ def handler(event, context):
                 except Exception as t_ve:
                     logger.warning(f"Could not enable pgvector in {db_name}: {t_ve}")
 
-                result_msg = f"Database '{db_name}' created successfully with pgvector for {workload_type}."
+                result_msg = f"Database '{db_name}' and user '{db_user_scoped}' created successfully with pgvector for {workload_type}."
             else:
                 # Default: schema-per-tenant (n8n, standard workloads)
                 cursor.execute("CREATE SCHEMA IF NOT EXISTS %s;", (psycopg2.extensions.AsIs(f'"{db_schema}"'),))
