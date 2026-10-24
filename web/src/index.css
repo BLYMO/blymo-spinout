@@ -947,3 +947,11 @@ nav {
   font-weight: 600;
 }
 
+/* Documentation Mobile Responsiveness */
+@media (max-width: 768px) {
+  .mobile-docs-toggle {
+    display: block !important;
+  }
+}
+
+

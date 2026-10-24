@@ -252,6 +252,8 @@ export default function Home() {
 
           <div className="desktop-nav">
             <a href="#features" className="btn btn-secondary" style={{ marginRight: '1rem', border: 'none', background: 'transparent' }}>Features</a>
+            <a href="#keyless-architecture" className="btn btn-secondary" style={{ marginRight: '1rem', border: 'none', background: 'transparent' }}>Architecture</a>
+            <Link to="/docs" className="btn btn-secondary" style={{ marginRight: '1rem', border: 'none', background: 'transparent' }}>Docs</Link>
             <a href="#community" className="btn btn-secondary" style={{ marginRight: '1rem', border: 'none', background: 'transparent' }}>Cloud Waitlist</a>
             <a href="https://github.com/rgayan12/trybase" target="_blank" rel="noreferrer" className="btn btn-secondary" style={{ marginRight: '1rem', border: 'none', background: 'transparent', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
               <Star size={16} fill="#facc15" color="#facc15" /> GitHub
@@ -271,6 +273,8 @@ export default function Home() {
 
       <div className={`mobile-menu-overlay ${isMenuOpen ? 'is-open' : ''}`}>
         <a href="#features" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Features</a>
+        <a href="#keyless-architecture" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Architecture</a>
+        <Link to="/docs" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Docs</Link>
         <a href="#community" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Cloud Waitlist</a>
         <a href="https://github.com/rgayan12/trybase" target="_blank" rel="noreferrer" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>GitHub</a>
         {session ? (
@@ -868,8 +872,10 @@ export default function Home() {
             <img src="/favicon.svg" alt="TryBase Icon" style={{ height: '24px', filter: 'brightness(0) invert(1)' }} />
             TryBase
           </div>
-          <p>The Open-Source Platform to Build & Scale Multi-Tenant AI Agents on Battle-Tested Hyperscalers.</p>
-          <div style={{ marginTop: '1rem' }}>
+          <p>The Open-Source AI Agent Infrastructure Layer for Battle-Tested Hyperscalers.</p>
+          <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
+            <Link to="/docs" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Documentation</Link>
+            <a href="https://github.com/rgayan12/trybase" target="_blank" rel="noreferrer" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>GitHub Repository</a>
             <a href="mailto:bastiyan@blymo.co.uk" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Contact Us</a>
           </div>
           <p style={{ marginTop: '2rem', fontSize: '0.85rem', color: 'rgba(255,255,255,0.2)' }}>
